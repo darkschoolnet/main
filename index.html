@@ -1,181 +1,1307 @@
--- ════════════════════════════════════════════════════════════════
--- DSN GAMES PATCH — im Supabase SQL-Editor ausführen
--- Ergänzung zum Security Patch (dsn_security_patch.sql)
--- ════════════════════════════════════════════════════════════════
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DARK SCHOOL NET — HUB</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg-base:#0a0a0a;--bg-surface:#111111;--bg-card:#161616;--bg-input:#0e0e0e;
+  --border-subtle:#222222;--border-mid:#333333;--border-active:#555555;
+  --text-primary:#c8c8c8;--text-secondary:#666666;--text-muted:#3a3a3a;--text-white:#e8e8e8;
+  --accent:#5b8cff;--accent-glow:rgba(91,140,255,0.15);
+  --danger:#ff4444;--danger-glow:rgba(255,68,68,0.12);
+  --success:#44cc88;--warning:#ffaa33;
+  --admin:#cc44ff;--admin-glow:rgba(204,68,255,0.15);
+  --fi:Impact,Haettenschweiler,'Arial Narrow Bold',sans-serif;
+  --fu:'Barlow Condensed',sans-serif;--fb:'Barlow',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg-base);color:var(--text-primary);font-family:var(--fb);min-height:100vh;overflow-x:hidden;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.18) 3px,rgba(0,0,0,.18) 4px);opacity:.4;}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);background-size:40px 40px;}
 
--- ── 1. Games-Tabelle ─────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS dsn_games (
-  id            UUID    DEFAULT gen_random_uuid() PRIMARY KEY,
-  name          TEXT    NOT NULL,
-  url           TEXT    NOT NULL,
-  image_base64  TEXT,                        -- quadratisches Bild, client-seitig auf 200x200 komprimiert
-  emoji         TEXT    DEFAULT '🎮',         -- Fallback wenn kein Bild hochgeladen
-  accent_color  TEXT    DEFAULT '#5b8cff',
-  glow_color    TEXT    DEFAULT 'rgba(91,140,255,0.12)',
-  type_label    TEXT    DEFAULT 'APP',
-  description   TEXT    DEFAULT '',
-  sort_order    INTEGER DEFAULT 0,
-  active        BOOLEAN DEFAULT true,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
-);
+/* HEADER */
+header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-subtle);background:rgba(10,10,10,.97);backdrop-filter:blur(10px);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.logo{font-family:var(--fi);font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--text-white);}
+.logo span{color:var(--accent);}
+.header-right{display:flex;align-items:center;gap:10px;}
+.user-badge{display:none;align-items:center;gap:8px;background:var(--bg-surface);border:1px solid var(--border-mid);padding:5px 12px;font-family:var(--fu);font-size:12px;color:var(--text-primary);letter-spacing:1px;cursor:pointer;transition:border-color .2s;}
+.user-badge:hover{border-color:var(--accent);}
+.user-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);flex-shrink:0;}
+.user-badge.active{display:flex;}
+.hbtn{font-family:var(--fi);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:7px 16px;border:1px solid var(--border-mid);background:transparent;color:var(--text-secondary);cursor:pointer;position:relative;overflow:hidden;transition:color .2s,border-color .2s;}
+.hbtn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .22s;z-index:-1;}
+.hbtn:hover{color:#fff;border-color:var(--accent);}
+.hbtn:hover::before{transform:scaleX(1);}
+.hbtn-accent{border-color:var(--accent);color:var(--accent);}
+.hbtn-admin{border-color:rgba(204,68,255,.3);color:var(--text-muted);}
+.hbtn-admin::before{background:var(--admin);}
+.hbtn-admin:hover{border-color:var(--admin);}
 
-ALTER TABLE dsn_games ENABLE ROW LEVEL SECURITY;
+/* HERO */
+.hero{position:relative;z-index:1;text-align:center;padding:80px 32px 60px;}
+.hero-tag{font-family:var(--fu);font-size:11px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:12px;}
+.hero-tag::before,.hero-tag::after{content:'';width:40px;height:1px;background:var(--accent);opacity:.4;}
+.hero h1{font-family:var(--fi);font-size:clamp(44px,9vw,96px);letter-spacing:6px;text-transform:uppercase;color:var(--text-white);line-height:.92;}
+.hero h1 .accent{color:var(--accent);}
+.hero-sub{font-family:var(--fu);font-size:15px;letter-spacing:2px;color:var(--text-secondary);text-transform:uppercase;margin-top:18px;}
 
--- Öffentlicher Lesezugriff nur auf aktive Games (kein salt/hash etc. hier)
-DROP POLICY IF EXISTS "Games lesbar" ON dsn_games;
-CREATE POLICY "Games lesbar" ON dsn_games FOR SELECT USING (active = true);
+/* PROMO */
+.promo-banner{position:relative;z-index:1;margin:0 32px 60px;border:1px solid var(--border-subtle);background:var(--bg-surface);display:flex;align-items:stretch;overflow:hidden;}
+.promo-banner::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);}
+.promo-left{padding:28px 36px;flex:1;}
+.promo-left h2{font-family:var(--fi);font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--text-white);margin-bottom:8px;}
+.promo-left p{font-size:14px;color:var(--text-secondary);line-height:1.6;max-width:500px;}
+.promo-left p em{color:var(--accent);font-style:normal;font-weight:500;}
+.promo-perks{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px;}
+.perk{font-family:var(--fu);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);border:1px solid rgba(91,140,255,.25);background:var(--accent-glow);padding:3px 10px;}
+.promo-right{padding:28px 32px;display:flex;flex-direction:column;gap:10px;border-left:1px solid var(--border-subtle);flex-shrink:0;justify-content:center;}
+.promo-banner.hidden{display:none;}
+.pbtn{font-family:var(--fi);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;border:1px solid var(--border-mid);background:transparent;color:var(--text-secondary);cursor:pointer;position:relative;overflow:hidden;transition:color .2s,border-color .2s;text-decoration:none;display:inline-block;text-align:center;}
+.pbtn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .22s;z-index:-1;}
+.pbtn:hover{color:#fff;border-color:var(--accent);}
+.pbtn:hover::before{transform:scaleX(1);}
+.pbtn-accent{border-color:var(--accent);color:var(--accent);}
 
--- Kein direkter Schreibzugriff für Anon — nur über Admin-RPCs
-DROP POLICY IF EXISTS "Games kein Anon Write" ON dsn_games;
-CREATE POLICY "Games kein Anon Write" ON dsn_games FOR ALL
-  USING (false) WITH CHECK (false);
+/* WELCOME */
+.welcome-banner{display:none;position:relative;z-index:1;margin:0 32px 60px;border:1px solid var(--border-subtle);background:var(--bg-surface);padding:24px 36px;align-items:center;gap:20px;overflow:hidden;}
+.welcome-banner::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--success);}
+.welcome-banner.active{display:flex;}
+.welcome-info h2{font-family:var(--fi);font-size:18px;letter-spacing:3px;text-transform:uppercase;color:var(--text-white);}
+.welcome-info h2 span{color:var(--success);}
+.welcome-info p{font-family:var(--fu);font-size:12px;color:var(--text-secondary);letter-spacing:1px;margin-top:4px;text-transform:uppercase;}
+
+/* APPS */
+.section{position:relative;z-index:1;padding:0 32px 80px;}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px;}
+.section-title{font-family:var(--fi);font-size:14px;letter-spacing:4px;text-transform:uppercase;color:var(--text-secondary);white-space:nowrap;}
+.section-line{flex:1;height:1px;background:var(--border-subtle);}
+.apps-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:2px;}
+
+/* APP CARD */
+.app-card{position:relative;background:var(--bg-card);border:1px solid var(--border-subtle);overflow:hidden;cursor:pointer;transition:border-color .2s;animation:cardIn .5s ease both;text-decoration:none;display:block;}
+.app-card::before{content:'';position:absolute;top:0;left:0;width:20px;height:20px;border-top:2px solid var(--card-accent,var(--accent));border-left:2px solid var(--card-accent,var(--accent));z-index:2;pointer-events:none;}
+.app-card::after{content:'';position:absolute;bottom:0;right:0;width:20px;height:20px;border-bottom:2px solid var(--border-mid);border-right:2px solid var(--border-mid);z-index:2;pointer-events:none;}
+.app-card:hover{border-color:var(--border-active);}
+.app-card:hover .card-glow{opacity:1;}
+.app-card:hover .card-launch{opacity:1;transform:translateY(0);}
+.card-glow{position:absolute;inset:0;background:radial-gradient(ellipse at top left,var(--card-glow,var(--accent-glow)) 0%,transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none;}
+.card-body{padding:30px 26px 22px;}
+.card-thumb{width:64px;height:64px;margin-bottom:16px;object-fit:cover;border:1px solid var(--border-mid);display:block;background:var(--bg-surface);}
+.card-emoji{font-size:40px;margin-bottom:14px;display:block;line-height:1;}
+.card-type{font-family:var(--fu);font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--card-accent,var(--accent));margin-bottom:8px;}
+.card-name{font-family:var(--fi);font-size:28px;letter-spacing:2px;text-transform:uppercase;color:var(--text-white);line-height:1;margin-bottom:10px;}
+.card-desc{font-size:13px;color:var(--text-secondary);line-height:1.55;margin-bottom:20px;}
+.card-footer{border-top:1px solid var(--border-subtle);padding:12px 26px;display:flex;align-items:center;justify-content:space-between;}
+.card-tag{font-family:var(--fu);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.card-launch{font-family:var(--fi);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--card-accent,var(--accent));opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.card-launch::after{content:'→';font-size:13px;}
+.apps-loading{text-align:center;padding:48px;font-family:var(--fu);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+
+/* FOOTER */
+footer{position:relative;z-index:1;border-top:1px solid var(--border-subtle);padding:24px 32px;display:flex;align-items:center;justify-content:space-between;}
+.footer-left{font-family:var(--fu);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.footer-status{display:flex;align-items:center;gap:8px;font-family:var(--fu);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 6px var(--success);animation:pulse 2s infinite;}
+
+/* DRAWER */
+.drawer-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.75);backdrop-filter:blur(3px);}
+.drawer-overlay.open{display:block;}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:201;width:100%;max-width:580px;background:var(--bg-base);border-left:1px solid var(--border-mid);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .32s cubic-bezier(.16,1,.3,1);overflow:hidden;}
+.drawer.open{transform:translateX(0);}
+.drawer-head{flex-shrink:0;padding:0 24px;border-bottom:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:space-between;height:58px;background:rgba(10,10,10,.9);}
+.drawer-title{font-family:var(--fi);font-size:16px;letter-spacing:3px;text-transform:uppercase;color:var(--text-white);}
+.drawer-title span{color:var(--accent);}
+.drawer-title.adm-color span{color:var(--admin);}
+.drawer-close{background:none;border:1px solid var(--border-subtle);color:var(--text-secondary);width:32px;height:32px;cursor:pointer;font-size:16px;transition:color .15s,border-color .15s;display:flex;align-items:center;justify-content:center;}
+.drawer-close:hover{color:var(--text-white);border-color:var(--border-active);}
+.drawer-body{flex:1;overflow-y:auto;padding:24px;}
+.drawer-body::-webkit-scrollbar{width:4px;}
+.drawer-body::-webkit-scrollbar-thumb{background:var(--border-mid);}
+
+/* TABS */
+.d-tabs{display:flex;border-bottom:1px solid var(--border-subtle);margin-bottom:24px;flex-shrink:0;}
+.d-tab{font-family:var(--fu);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:11px 14px;background:none;border:none;cursor:pointer;color:var(--text-secondary);position:relative;transition:color .15s;}
+.d-tab::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--accent);transform:scaleX(0);transition:transform .22s;}
+.d-tab.active{color:var(--accent);}
+.d-tab.active::after{transform:scaleX(1);}
+.d-panel{display:none;animation:fadeSlide .25s ease both;}
+.d-panel.active{display:block;}
+
+/* FORMS */
+.fg{margin-bottom:14px;}
+.fl{font-family:var(--fu);font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:6px;display:block;}
+.fi-inp{width:100%;background:var(--bg-input);border:1px solid var(--border-mid);color:var(--text-white);font-family:var(--fu);font-size:14px;letter-spacing:1px;padding:10px 14px;outline:none;transition:border-color .15s;border-radius:0;-webkit-appearance:none;appearance:none;}
+.fi-inp:focus{border-color:var(--accent);}
+.fi-inp::placeholder{color:var(--text-muted);}
+select.fi-inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23555' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer;}
+select.fi-inp option{background:#161616;color:var(--text-white);}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fg-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fbtn{width:100%;font-family:var(--fi);font-size:13px;letter-spacing:3px;text-transform:uppercase;padding:12px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;position:relative;overflow:hidden;transition:color .2s;margin-top:6px;}
+.fbtn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .22s;z-index:-1;}
+.fbtn:hover{color:#fff;}
+.fbtn:hover::before{transform:scaleX(1);}
+.fbtn:disabled{opacity:.4;cursor:not-allowed;}
+.fbtn:disabled::before{transform:scaleX(0)!important;}
+.fbtn:disabled:hover{color:var(--accent);}
+.fbtn-admin{border-color:var(--admin);color:var(--admin);}
+.fbtn-admin::before{background:var(--admin);}
+.fbtn-admin:disabled:hover{color:var(--admin);}
+.fbtn-sm{width:auto;padding:8px 16px;font-size:11px;margin-top:0;}
+.msg{font-family:var(--fu);font-size:12px;letter-spacing:1px;padding:8px 12px;margin-top:8px;display:none;}
+.msg.err{background:var(--danger-glow);color:var(--danger);border-left:2px solid var(--danger);display:block;}
+.msg.ok{background:rgba(68,204,136,.1);color:var(--success);border-left:2px solid var(--success);display:block;}
+.guest-note{text-align:center;margin-top:14px;font-family:var(--fu);font-size:11px;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;}
+
+/* DASHBOARD */
+.d-welcome{font-family:var(--fi);font-size:clamp(20px,4vw,28px);color:var(--text-white);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px;}
+.d-welcome em{color:var(--accent);font-style:normal;}
+.d-subtitle{font-family:var(--fu);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);margin-bottom:22px;}
+.d-rule{height:1px;background:var(--border-subtle);margin-bottom:20px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;}
+.info-block{background:var(--bg-surface);border:1px solid var(--border-subtle);padding:12px 14px;}
+.info-label{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:4px;}
+.info-value{font-family:var(--fu);font-size:16px;font-weight:600;color:var(--text-white);}
+.lbtn{background:transparent;border:1px solid var(--border-mid);color:var(--text-secondary);font-family:var(--fi);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;cursor:pointer;transition:border-color .2s,color .2s;}
+.lbtn:hover{border-color:var(--danger);color:var(--danger);}
+
+/* STATS TABLE */
+.stats-table{width:100%;border-collapse:collapse;}
+.stats-table th{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);padding:8px 12px;border-bottom:1px solid var(--border-subtle);text-align:left;}
+.stats-table td{font-family:var(--fu);font-size:13px;color:var(--text-primary);padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.03);}
+.stats-table tr:last-child td{border-bottom:none;}
+.stats-table tr:hover td{background:rgba(255,255,255,.02);}
+.gname{font-weight:600;color:var(--text-white);display:flex;align-items:center;gap:8px;}
+.gicon{width:26px;height:26px;border:1px solid var(--border-mid);display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--bg-surface);flex-shrink:0;overflow:hidden;}
+.gicon img{width:100%;height:100%;object-fit:cover;}
+.sbadge{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px solid;}
+.sbadge.active{color:var(--success);border-color:rgba(68,204,136,.3);background:rgba(68,204,136,.07);}
+.sbadge.soon{color:var(--warning);border-color:rgba(255,170,51,.3);background:rgba(255,170,51,.07);}
+.sval{font-family:var(--fi);font-size:17px;color:var(--accent);}
+.sval.empty{color:var(--text-muted);font-family:var(--fu);font-size:13px;font-style:italic;}
+
+/* SETTINGS ACCORDION */
+.settings-head{font-family:var(--fi);font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--text-white);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border-subtle);}
+.ch-block{border:1px solid var(--border-subtle);margin-bottom:8px;overflow:hidden;}
+.ch-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer;transition:background .2s;user-select:none;}
+.ch-header:hover{background:rgba(255,255,255,.02);}
+.ch-left{display:flex;flex-direction:column;gap:2px;}
+.ch-label{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.ch-cur{font-family:var(--fu);font-size:14px;font-weight:500;color:var(--text-primary);}
+.ch-arrow{font-size:11px;color:var(--text-muted);transition:transform .22s,color .2s;}
+.ch-block.open .ch-arrow{transform:rotate(180deg);color:var(--accent);}
+.ch-block.open .ch-header{background:rgba(91,140,255,.04);}
+.ch-body{display:none;padding:14px 16px;border-top:1px solid var(--border-subtle);background:rgba(0,0,0,.2);flex-direction:column;gap:10px;}
+.ch-block.open .ch-body{display:flex;}
+.sbtn{font-family:var(--fi);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:10px 18px;background:transparent;border:1px solid var(--accent);color:var(--accent);cursor:pointer;position:relative;overflow:hidden;transition:color .2s;align-self:flex-start;}
+.sbtn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .2s;z-index:-1;}
+.sbtn:hover{color:#fff;}
+.sbtn:hover::before{transform:scaleX(1);}
+.sbtn:disabled{opacity:.4;cursor:not-allowed;}
+.sbtn:disabled::before{transform:scaleX(0)!important;}
+.sbtn:disabled:hover{color:var(--accent);}
+
+/* PRIVACY TOGGLE */
+.priv-block{border:1px solid var(--border-subtle);margin-bottom:8px;}
+.priv-inner{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.priv-ttl{font-family:var(--fu);font-size:13px;font-weight:600;color:var(--text-white);margin-bottom:3px;}
+.priv-desc{font-size:12px;color:var(--text-secondary);line-height:1.5;max-width:300px;}
+.priv-preview{font-family:var(--fu);font-size:11px;letter-spacing:1px;margin-top:5px;}
+.priv-preview .pl{color:var(--text-muted);}
+.priv-preview .pv{font-weight:600;}
+.pv.shown{color:var(--success);}
+.pv.hidden{color:var(--warning);}
+.toggle{position:relative;display:inline-block;width:46px;height:24px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;cursor:pointer;inset:0;background:var(--border-mid);transition:background .3s;border:1px solid var(--border-active);}
+.tog-sl::before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:var(--text-muted);transition:transform .3s,background .3s;}
+.toggle input:checked+.tog-sl{background:rgba(68,204,136,.2);border-color:var(--success);}
+.toggle input:checked+.tog-sl::before{transform:translateX(22px);background:var(--success);}
+.tog-save{font-family:var(--fu);font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-top:5px;text-align:center;min-height:13px;}
+
+/* ADMIN DRAWER */
+.adm-head-bar{padding:16px 20px;background:var(--bg-card);border:1px solid rgba(204,68,255,.2);border-bottom:none;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;}
+.adm-head-bar::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--admin);}
+.adm-title-big{font-family:var(--fi);font-size:20px;letter-spacing:3px;text-transform:uppercase;color:var(--admin);}
+.adm-badge{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;background:rgba(204,68,255,.1);border:1px solid rgba(204,68,255,.25);color:var(--admin);padding:3px 8px;}
+.adm-nav{display:grid;grid-template-columns:repeat(4,1fr);background:var(--bg-card);border:1px solid rgba(204,68,255,.2);border-top:1px solid var(--border-subtle);border-bottom:none;}
+.adm-tab{padding:11px 8px;background:none;border:none;border-bottom:1px solid var(--border-subtle);font-family:var(--fi);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);cursor:pointer;position:relative;transition:color .2s;}
+.adm-tab::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--admin);transform:scaleX(0);transition:transform .22s;}
+.adm-tab.active{color:var(--text-white);}
+.adm-tab.active::after{transform:scaleX(1);}
+.adm-panel{display:none;background:var(--bg-card);border:1px solid rgba(204,68,255,.2);border-top:none;padding:24px;animation:fadeSlide .25s ease both;}
+.adm-panel.active{display:block;}
+
+/* ADMIN STATS */
+.stat-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.stat-card{background:var(--bg-surface);border:1px solid var(--border-subtle);padding:16px;position:relative;overflow:hidden;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card.pur::before{background:var(--admin);}
+.stat-card.blu::before{background:var(--accent);}
+.stat-card.grn::before{background:var(--success);}
+.stat-num{font-family:var(--fi);font-size:36px;color:var(--text-white);line-height:1;margin-bottom:3px;}
+.stat-lbl{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.grade-bars{display:flex;flex-direction:column;gap:7px;}
+.grade-row{display:flex;align-items:center;gap:10px;}
+.grade-key{font-family:var(--fu);font-size:11px;font-weight:600;color:var(--text-secondary);width:60px;flex-shrink:0;}
+.grade-bar-w{flex:1;height:5px;background:var(--border-subtle);}
+.grade-bar-f{height:100%;background:var(--admin);transition:width .8s cubic-bezier(.16,1,.3,1);}
+.grade-bar-f.blue{background:var(--accent);}
+.grade-count{font-family:var(--fu);font-size:11px;color:var(--text-muted);width:18px;text-align:right;flex-shrink:0;}
+.sec-title{font-family:var(--fi);font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--text-white);margin-bottom:12px;display:flex;align-items:center;gap:10px;}
+.sec-count{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;background:rgba(255,255,255,.05);border:1px solid var(--border-subtle);color:var(--text-secondary);padding:2px 7px;}
+.search-w{position:relative;margin-bottom:14px;}
+.search-w input{padding-left:34px;}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none;}
+
+/* USER TABLE */
+.user-table{width:100%;border-collapse:collapse;}
+.user-table th{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);padding:7px 10px;border-bottom:1px solid var(--border-subtle);text-align:left;}
+.user-table td{font-family:var(--fu);font-size:13px;color:var(--text-primary);padding:10px;border-bottom:1px solid rgba(255,255,255,.03);}
+.user-table tr:last-child td{border-bottom:none;}
+.user-table tr:hover td{background:rgba(255,255,255,.02);}
+.td-uname{font-weight:600;color:var(--text-white);}
+.td-priv{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--warning);background:rgba(255,170,51,.08);border:1px solid rgba(255,170,51,.25);padding:2px 6px;}
+.del-btn{background:none;border:1px solid rgba(255,68,68,.2);color:rgba(255,68,68,.5);font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.del-btn:hover{border-color:var(--danger);color:var(--danger);background:rgba(255,68,68,.07);}
+.empty-st{text-align:center;padding:28px;font-family:var(--fu);font-size:12px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;}
+
+/* GAME MANAGEMENT */
+.game-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+.game-row{background:var(--bg-surface);border:1px solid var(--border-subtle);padding:12px 14px;display:flex;align-items:center;gap:12px;transition:border-color .15s;}
+.game-row:hover{border-color:var(--border-active);}
+.game-row-thumb{width:36px;height:36px;border:1px solid var(--border-mid);object-fit:cover;background:var(--bg-card);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
+.game-row-thumb img{width:100%;height:100%;object-fit:cover;}
+.game-row-info{flex:1;min-width:0;}
+.game-row-name{font-family:var(--fi);font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--text-white);}
+.game-row-url{font-family:var(--fu);font-size:11px;color:var(--text-muted);letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.game-row-badge{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px solid;flex-shrink:0;}
+.game-row-badge.on{color:var(--success);border-color:rgba(68,204,136,.3);background:rgba(68,204,136,.07);}
+.game-row-badge.off{color:var(--text-muted);border-color:var(--border-subtle);background:transparent;}
+.game-row-actions{display:flex;gap:6px;flex-shrink:0;}
+.icon-btn{background:none;border:1px solid var(--border-mid);color:var(--text-secondary);font-size:13px;width:30px;height:30px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+.icon-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+
+/* COLOR PICKER ROW */
+.color-dot{width:20px;height:20px;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:transform .15s;}
+.color-dot.selected{border-color:#fff;transform:scale(1.2);}
+.color-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;}
+
+/* IMAGE UPLOAD */
+.img-upload-wrap{border:1px dashed var(--border-mid);padding:16px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;}
+.img-upload-wrap:hover{border-color:var(--accent);}
+.img-upload-wrap input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.img-preview{width:80px;height:80px;object-fit:cover;border:1px solid var(--border-mid);margin:0 auto 8px;display:none;}
+.img-upload-label{font-family:var(--fu);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);}
+
+/* MODAL */
+.moverlay{display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.88);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:16px;}
+.moverlay.open{display:flex;}
+.mcard{width:100%;max-width:360px;background:var(--bg-card);border:1px solid var(--border-mid);position:relative;animation:cardIn .25s ease both;}
+.mcard::before{content:'';position:absolute;top:0;left:0;width:22px;height:22px;border-top:2px solid var(--accent);border-left:2px solid var(--accent);}
+.mcard::after{content:'';position:absolute;bottom:0;right:0;width:22px;height:22px;border-bottom:2px solid var(--border-mid);border-right:2px solid var(--border-mid);}
+.mbody{padding:20px 22px 22px;display:flex;flex-direction:column;gap:12px;}
+.del-title{font-family:var(--fi);font-size:18px;text-transform:uppercase;letter-spacing:2px;color:var(--danger);margin-bottom:8px;}
+.del-msg{font-size:14px;color:var(--text-secondary);margin-bottom:20px;line-height:1.5;}
+.del-msg strong{color:var(--text-white);}
+.del-actions{display:flex;gap:10px;}
+.del-confirm{flex:1;padding:11px;background:transparent;border:1px solid var(--danger);color:var(--danger);font-family:var(--fi);font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;position:relative;overflow:hidden;transition:color .2s;}
+.del-confirm::before{content:'';position:absolute;inset:0;background:var(--danger);transform:scaleX(0);transform-origin:left;transition:transform .2s;z-index:-1;}
+.del-confirm:hover{color:#fff;}
+.del-confirm:hover::before{transform:scaleX(1);}
+.del-cancel{flex:1;padding:11px;background:transparent;border:1px solid var(--border-mid);color:var(--text-secondary);font-family:var(--fi);font-size:12px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:border-color .2s,color .2s;}
+.del-cancel:hover{border-color:var(--text-secondary);color:var(--text-white);}
+
+/* SPINNER & ANIMATIONS */
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.2);border-top-color:currentColor;border-radius:50%;animation:doSpin .7s linear infinite;margin-right:7px;vertical-align:middle;}
+@keyframes doSpin{to{transform:rotate(360deg)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+@media(max-width:640px){
+  header{padding:0 16px;}
+  .hero{padding:48px 16px 40px;}
+  .promo-banner{margin:0 16px 48px;flex-direction:column;}
+  .promo-right{border-left:none;border-top:1px solid var(--border-subtle);}
+  .welcome-banner{margin:0 16px 48px;}
+  .section{padding:0 16px 60px;}
+  footer{flex-direction:column;gap:10px;text-align:center;padding:20px 16px;}
+  .drawer{max-width:100%;}
+  .info-grid,.fg-row,.fg-row-3,.stat-cards{grid-template-columns:1fr;}
+  .card-tag{display:none;}
+  .adm-nav{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">DARK<span>SCHOOL</span>NET</div>
+  <div class="header-right">
+    <div class="user-badge" id="userBadge" onclick="openAccountDrawer('overview')">
+      <div class="dot"></div><span id="badgeUser">—</span>
+    </div>
+    <button class="hbtn hbtn-accent" id="btnAccount" onclick="openAccountDrawer('login')">ACCOUNT</button>
+    <button class="hbtn hbtn-admin" onclick="openAdminLogin()">ADMIN</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">PRIVATES SCHÜLER-NETZWERK</div>
+  <h1>DARK<br><span class="accent">SCHOOL</span><br>NET</h1>
+  <p class="hero-sub">Dein Hub für Spiele &amp; Apps auf dem Schul-iPad</p>
+</section>
+
+<!-- PROMO BANNER -->
+<div class="promo-banner" id="promoBanner">
+  <div class="promo-left">
+    <h2>Ein Account — Alles entsperrt</h2>
+    <p>Mit einem DSN-Account hast du <em>überall denselben Login</em> — bei jedem Spiel, jeder App. Kein nerviges Neu-Registrieren. Du kannst natürlich auch <em>ohne Account</em> reinschauen.</p>
+    <div class="promo-perks">
+      <span class="perk">Kostenlos</span><span class="perk">Kein Klarname nötig</span>
+      <span class="perk">Überall gleicher Login</span><span class="perk">10 Sekunden</span>
+    </div>
+  </div>
+  <div class="promo-right">
+    <button class="pbtn pbtn-accent" onclick="openAccountDrawer('register')">JETZT REGISTRIEREN</button>
+    <button class="pbtn" onclick="openAccountDrawer('login')">BEREITS DABEI? LOGIN</button>
+  </div>
+</div>
+
+<!-- WELCOME BANNER -->
+<div class="welcome-banner" id="welcomeBanner">
+  <div class="welcome-info">
+    <h2>WILLKOMMEN, <span id="welcomeName">—</span></h2>
+    <p id="welcomeMeta">Klasse — · Dabei seit —</p>
+  </div>
+</div>
+
+<!-- APPS -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-title">APPS &amp; SPIELE</span>
+    <div class="section-line"></div>
+    <span class="section-title" id="gameCount">…</span>
+  </div>
+  <div class="apps-grid" id="appsGrid">
+    <div class="apps-loading"><span class="spin"></span> LÄDT…</div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-left">© DARK SCHOOL NET — ALLE APPS KOSTENLOS</div>
+  <div class="footer-status"><div class="status-dot"></div>ALLE SYSTEME ONLINE</div>
+</footer>
 
 
--- ── 2. Initiale Games eintragen ──────────────────────────────────
--- (Nur wenn Tabelle noch leer ist)
-INSERT INTO dsn_games (name, url, emoji, accent_color, glow_color, type_label, description, sort_order, active)
-SELECT * FROM (VALUES
-  ('Block Blast',  'https://darkschoolnet.github.io/blockblast',  '🟦', '#5b8cff', 'rgba(91,140,255,0.12)',  'SPIEL · PUZZLE',        'Platziere Blöcke, räume Reihen ab und erreich den Highscore. Der Klassiker auf dem Schul-iPad.', 1, true),
-  ('Crossy Roads', 'https://darkschoolnet.github.io/crossyroad',  '🐔', '#ffaa33', 'rgba(255,170,51,0.1)',   'SPIEL · ARCADE',        'Spring über Straßen, Gleise und Flüsse. Wie weit kommst du? Simpel, direkt, süchtig machend.', 2, true),
-  ('Chats',        'https://darkschoolnet.github.io/chat',        '💬', '#44cc88', 'rgba(68,204,136,0.1)',   'APP · KOMMUNIKATION',   'Schreib direkt mit Mitschülern im DSN-Netz. Kein Lehrerzugriff, kein Drama.',                   3, true)
-) AS v(name, url, emoji, accent_color, glow_color, type_label, description, sort_order, active)
-WHERE NOT EXISTS (SELECT 1 FROM dsn_games);
+<!-- ══ ACCOUNT DRAWER ══ -->
+<div class="drawer-overlay" id="accOverlay" onclick="closeAccountDrawer()"></div>
+<div class="drawer" id="accDrawer">
+  <div class="drawer-head">
+    <div class="drawer-title">DSN <span>ACCOUNT</span></div>
+    <button class="drawer-close" onclick="closeAccountDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div id="authSection">
+      <div class="d-tabs">
+        <button class="d-tab active" id="tabLogin"    onclick="switchAuthTab('login')">LOGIN</button>
+        <button class="d-tab"        id="tabRegister" onclick="switchAuthTab('register')">REGISTRIEREN</button>
+      </div>
+      <div class="d-panel active" id="panelLogin">
+        <div class="fg"><label class="fl">USERNAME</label><input class="fi-inp" id="loginUser" type="text" placeholder="dein_username" autocomplete="off"/></div>
+        <div class="fg"><label class="fl">PASSWORT</label><input class="fi-inp" id="loginPass" type="password" placeholder="••••••••"/></div>
+        <div class="msg" id="loginMsg"></div>
+        <button class="fbtn" id="loginBtn" onclick="doLogin()"><span id="loginBtnTxt">EINLOGGEN</span></button>
+        <div class="guest-note">Kein Account? Einfach als Gast weitersurfen.</div>
+      </div>
+      <div class="d-panel" id="panelRegister">
+        <div class="fg-row">
+          <div class="fg"><label class="fl">USERNAME</label><input class="fi-inp" id="regUser" type="text" placeholder="shadow_felix" autocomplete="off"/></div>
+          <div class="fg"><label class="fl">KLASSE</label>
+            <select class="fi-inp" id="regGrade">
+              <option value="" disabled selected>— wählen —</option>
+              <option value="5">Klasse 5</option><option value="6">Klasse 6</option><option value="7">Klasse 7</option><option value="8">Klasse 8</option><option value="9">Klasse 9</option><option value="10">Klasse 10</option><option value="11">Klasse 11 (EF)</option><option value="12">Klasse 12 (Q1)</option><option value="13">Klasse 13 (Q2)</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">VORNAME <span style="color:var(--text-muted);font-size:10px">(optional)</span></label><input class="fi-inp" id="regName" type="text" placeholder="z.B. Felix" autocomplete="off"/></div>
+        <div class="fg"><label class="fl">SCHULE</label>
+          <select class="fi-inp" id="regSchool">
+            <option value="" disabled selected>— wählen —</option>
+            <option value="Albert Einstein Gymnasium">Albert Einstein Gymnasium</option>
+            <option value="Andere Schule">Andere Schule</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">PASSWORT</label><input class="fi-inp" id="regPass" type="password" placeholder="Mind. 6 Zeichen"/></div>
+        <div class="msg" id="registerMsg"></div>
+        <button class="fbtn" id="registerBtn" onclick="doRegister()"><span id="registerBtnTxt">ACCOUNT ERSTELLEN</span></button>
+        <div class="guest-note">Kostenlos · Kein Klarname nötig · 10 Sekunden</div>
+      </div>
+    </div>
+    <div id="dashSection" style="display:none">
+      <div class="d-tabs">
+        <button class="d-tab active" id="dTabOverview"  onclick="switchDashTab('overview')">ÜBERSICHT</button>
+        <button class="d-tab"        id="dTabStats"     onclick="switchDashTab('stats')">STATS</button>
+        <button class="d-tab"        id="dTabSettings"  onclick="switchDashTab('settings')">EINSTELLUNGEN</button>
+      </div>
+      <div class="d-panel active" id="dPanelOverview">
+        <div class="d-welcome">WILLKOMMEN, <em id="dashName">–</em></div>
+        <div class="d-subtitle">Du bist eingeloggt im Dark School Net</div>
+        <div class="d-rule"></div>
+        <div class="info-grid">
+          <div class="info-block"><div class="info-label">USERNAME</div><div class="info-value" id="dashUser">–</div></div>
+          <div class="info-block"><div class="info-label">KLASSE</div><div class="info-value" id="dashGrade">–</div></div>
+          <div class="info-block"><div class="info-label">MITGLIED SEIT</div><div class="info-value" id="dashJoined">–</div></div>
+          <div class="info-block"><div class="info-label">SCHULE</div><div class="info-value" id="dashSchool">–</div></div>
+          <div class="info-block" style="grid-column:1/-1"><div class="info-label">ANZEIGENAME</div><div class="info-value" id="dashDisplay">–</div></div>
+        </div>
+        <button class="lbtn" onclick="doLogout()">AUSLOGGEN</button>
+      </div>
+      <div class="d-panel" id="dPanelStats">
+        <div class="d-welcome" style="font-size:22px;margin-bottom:6px">SPIELSTATISTIKEN</div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:18px;line-height:1.55">Deine persönlichen Stats aus allen DSN-Spielen.</p>
+        <table class="stats-table"><thead><tr><th>SPIEL</th><th>PUNKTE</th><th>SPIELE</th><th>STATUS</th></tr></thead><tbody id="statsBody"></tbody></table>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:14px">
+          <button class="sbtn" onclick="loadStats()" style="font-size:11px;padding:8px 14px">↻ AKTUALISIEREN</button>
+          <span style="font-family:var(--fu);font-size:11px;color:var(--text-muted)" id="statsTime"></span>
+        </div>
+      </div>
+      <div class="d-panel" id="dPanelSettings">
+        <div class="settings-head">ACCOUNT BEARBEITEN</div>
+        <div class="priv-block">
+          <div class="priv-inner">
+            <div>
+              <div class="priv-ttl">Vorname in Apps anzeigen</div>
+              <div class="priv-desc">Wenn aktiviert sehen andere deinen echten Vornamen. Sonst wird <strong>"Privat"</strong> angezeigt.</div>
+              <div class="priv-preview"><span class="pl">Anzeigename: </span><span class="pv" id="privPreview">–</span></div>
+            </div>
+            <div>
+              <label class="toggle"><input type="checkbox" id="togShowName" onchange="handlePrivacy()"/><span class="tog-sl"></span></label>
+              <div class="tog-save" id="togMsg"></div>
+            </div>
+          </div>
+        </div>
+        <div class="ch-block" id="cbUser">
+          <div class="ch-header" onclick="toggleCh('cbUser')"><div class="ch-left"><span class="ch-label">BENUTZERNAME</span><span class="ch-cur" id="curUser">–</span></div><span class="ch-arrow">▼</span></div>
+          <div class="ch-body">
+            <div class="msg" id="errUser"></div><div class="msg" id="okUser"></div>
+            <div class="fg-row">
+              <div class="fg"><label class="fl">NEUER USERNAME</label><input class="fi-inp" id="newUser" type="text" placeholder="neuer_username"/></div>
+              <div class="fg"><label class="fl">AKTUELLES PW</label><input class="fi-inp" id="pwUser" type="password" placeholder="zur Bestätigung"/></div>
+            </div>
+            <button class="sbtn" id="btnUser" onclick="changeField('username')"><span id="btnUserTxt">SPEICHERN</span></button>
+          </div>
+        </div>
+        <div class="ch-block" id="cbName">
+          <div class="ch-header" onclick="toggleCh('cbName')"><div class="ch-left"><span class="ch-label">VORNAME</span><span class="ch-cur" id="curName">–</span></div><span class="ch-arrow">▼</span></div>
+          <div class="ch-body">
+            <div class="msg" id="errName"></div><div class="msg" id="okName"></div>
+            <div class="fg-row">
+              <div class="fg"><label class="fl">NEUER VORNAME</label><input class="fi-inp" id="newName" type="text" placeholder="z.B. Felix"/></div>
+              <div class="fg"><label class="fl">AKTUELLES PW</label><input class="fi-inp" id="pwName" type="password" placeholder="zur Bestätigung"/></div>
+            </div>
+            <button class="sbtn" id="btnName" onclick="changeField('name')"><span id="btnNameTxt">SPEICHERN</span></button>
+          </div>
+        </div>
+        <div class="ch-block" id="cbGrade">
+          <div class="ch-header" onclick="toggleCh('cbGrade')"><div class="ch-left"><span class="ch-label">KLASSE</span><span class="ch-cur" id="curGrade">–</span></div><span class="ch-arrow">▼</span></div>
+          <div class="ch-body">
+            <div class="msg" id="errGrade"></div><div class="msg" id="okGrade"></div>
+            <div class="fg-row">
+              <div class="fg"><label class="fl">NEUE KLASSE</label>
+                <select class="fi-inp" id="newGrade">
+                  <option value="" disabled selected>— wählen —</option>
+                  <option value="5">Klasse 5</option><option value="6">Klasse 6</option><option value="7">Klasse 7</option><option value="8">Klasse 8</option><option value="9">Klasse 9</option><option value="10">Klasse 10</option><option value="11">Klasse 11 (EF)</option><option value="12">Klasse 12 (Q1)</option><option value="13">Klasse 13 (Q2)</option>
+                </select>
+              </div>
+              <div class="fg"><label class="fl">AKTUELLES PW</label><input class="fi-inp" id="pwGrade" type="password" placeholder="zur Bestätigung"/></div>
+            </div>
+            <button class="sbtn" id="btnGrade" onclick="changeField('grade')"><span id="btnGradeTxt">SPEICHERN</span></button>
+          </div>
+        </div>
+        <div class="ch-block" id="cbPw">
+          <div class="ch-header" onclick="toggleCh('cbPw')"><div class="ch-left"><span class="ch-label">PASSWORT</span><span class="ch-cur">••••••••</span></div><span class="ch-arrow">▼</span></div>
+          <div class="ch-body">
+            <div class="msg" id="errPw"></div><div class="msg" id="okPw"></div>
+            <div class="fg"><label class="fl">AKTUELLES PW</label><input class="fi-inp" id="pwOld" type="password" placeholder="zur Bestätigung"/></div>
+            <div class="fg-row">
+              <div class="fg"><label class="fl">NEUES PASSWORT</label><input class="fi-inp" id="pwNew" type="password" placeholder="neues Passwort"/></div>
+              <div class="fg"><label class="fl">WIEDERHOLEN</label><input class="fi-inp" id="pwNew2" type="password" placeholder="nochmal"/></div>
+            </div>
+            <button class="sbtn" id="btnPw" onclick="changeField('password')"><span id="btnPwTxt">SPEICHERN</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 
--- ════════════════════════════════════════════════════════════════
--- ÖFFENTLICHE RPC — Games laden (kein Admin nötig)
--- ════════════════════════════════════════════════════════════════
+<!-- ══ ADMIN DRAWER ══ -->
+<div class="drawer-overlay" id="admOverlay" onclick="closeAdminDrawer()"></div>
+<div class="drawer" id="admDrawer">
+  <div class="drawer-head">
+    <div class="drawer-title adm-color">ADMIN <span>PANEL</span></div>
+    <button class="drawer-close" onclick="closeAdminDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <!-- Login -->
+    <div id="admLoginSection">
+      <div class="d-welcome" style="font-size:20px;margin-bottom:6px;color:var(--admin)">⬡ ADMIN LOGIN</div>
+      <div class="d-subtitle" style="margin-bottom:20px">Nur für Administratoren</div>
+      <div class="fg"><label class="fl">ADMIN-PASSWORT</label><input class="fi-inp" id="admPwInput" type="password" placeholder="••••••••••••"/></div>
+      <div class="msg" id="admLoginMsg"></div>
+      <button class="fbtn fbtn-admin" id="admLoginBtn" onclick="verifyAdmin()"><span id="admLoginBtnTxt">ZUGANG ANFORDERN</span></button>
+    </div>
+    <!-- Dashboard -->
+    <div id="admDashSection" style="display:none">
+      <div class="adm-head-bar">
+        <div><div class="adm-title-big">⬡ ADMIN</div></div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="adm-badge">ROOT ACCESS</span>
+          <button class="lbtn" onclick="doAdminLogout()" style="font-size:11px;padding:7px 14px">ABMELDEN</button>
+        </div>
+      </div>
+      <div class="adm-nav">
+        <button class="adm-tab active" id="aTabStats"  onclick="switchAdmTab('stats')">STATISTIKEN</button>
+        <button class="adm-tab"        id="aTabUsers"  onclick="switchAdmTab('users')">ACCOUNTS</button>
+        <button class="adm-tab"        id="aTabGames"  onclick="switchAdmTab('games')">SPIELE</button>
+        <button class="adm-tab"        id="aTabConfig" onclick="switchAdmTab('config')">EINSTELLUNGEN</button>
+      </div>
 
-CREATE OR REPLACE FUNCTION dsn_get_games()
-RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  RETURN (
-    SELECT COALESCE(jsonb_agg(
-      jsonb_build_object(
-        'id',           g.id,
-        'name',         g.name,
-        'url',          g.url,
-        'image_base64', g.image_base64,
-        'emoji',        g.emoji,
-        'accent_color', g.accent_color,
-        'glow_color',   g.glow_color,
-        'type_label',   g.type_label,
-        'description',  g.description,
-        'sort_order',   g.sort_order
-      ) ORDER BY g.sort_order ASC, g.created_at ASC
-    ), '[]'::JSONB)
-    FROM dsn_games g WHERE g.active = true
-  );
-END; $$;
+      <!-- Stats -->
+      <div class="adm-panel active" id="aPanelStats">
+        <div class="stat-cards">
+          <div class="stat-card pur"><div class="stat-num" id="aStatTotal">–</div><div class="stat-lbl">ACCOUNTS GESAMT</div></div>
+          <div class="stat-card blu"><div class="stat-num" id="aStatToday">–</div><div class="stat-lbl">HEUTE REGISTRIERT</div></div>
+          <div class="stat-card grn"><div class="stat-num" id="aStatPriv">–</div><div class="stat-lbl">PRIVAT GESTELLT</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="border:1px solid var(--border-subtle);padding:16px"><div class="sec-title" style="font-size:12px;margin-bottom:12px">NACH KLASSE</div><div class="grade-bars" id="admGradeBars"></div></div>
+          <div style="border:1px solid var(--border-subtle);padding:16px"><div class="sec-title" style="font-size:12px;margin-bottom:12px">NACH SCHULE</div><div class="grade-bars" id="admSchoolBars"></div></div>
+        </div>
+      </div>
+
+      <!-- Users -->
+      <div class="adm-panel" id="aPanelUsers">
+        <div class="sec-title">ALLE ACCOUNTS <span class="sec-count" id="userCount">0</span></div>
+        <div class="search-w"><span class="search-ico">🔍</span><input class="fi-inp" type="text" id="userSearch" placeholder="Username oder Name…" oninput="filterUsers()"/></div>
+        <div class="msg" id="deleteOkMsg"></div>
+        <div style="overflow-x:auto">
+          <table class="user-table">
+            <thead><tr><th>USERNAME</th><th>VORNAME</th><th>KL.</th><th>SEIT</th><th>PRIV</th><th></th></tr></thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Games Management -->
+      <div class="adm-panel" id="aPanelGames">
+        <div class="sec-title">SPIELE &amp; APPS <span class="sec-count" id="admGameCount">0</span></div>
+        <div class="msg" id="gameMsg"></div>
+        <div class="game-list" id="admGameList"><div class="empty-st"><span class="spin"></span></div></div>
+
+        <!-- Add / Edit Form -->
+        <div style="border:1px solid rgba(204,68,255,.2);padding:16px;margin-top:8px">
+          <div style="font-family:var(--fi);font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--admin);margin-bottom:14px" id="gameFormTitle">+ NEUES SPIEL</div>
+          <input type="hidden" id="editGameId"/>
+
+          <div class="fg-row">
+            <div class="fg"><label class="fl">NAME</label><input class="fi-inp" id="gName" type="text" placeholder="Block Blast"/></div>
+            <div class="fg"><label class="fl">TYP-LABEL</label><input class="fi-inp" id="gType" type="text" placeholder="SPIEL · PUZZLE"/></div>
+          </div>
+          <div class="fg"><label class="fl">URL</label><input class="fi-inp" id="gUrl" type="text" placeholder="https://darkschoolnet.github.io/blockblast"/></div>
+          <div class="fg"><label class="fl">BESCHREIBUNG</label><input class="fi-inp" id="gDesc" type="text" placeholder="Kurze Beschreibung…"/></div>
+
+          <div class="fg-row">
+            <div class="fg">
+              <label class="fl">EMOJI (Fallback)</label>
+              <input class="fi-inp" id="gEmoji" type="text" placeholder="🎮" style="font-size:20px;text-align:center;"/>
+            </div>
+            <div class="fg">
+              <label class="fl">REIHENFOLGE</label>
+              <input class="fi-inp" id="gOrder" type="number" placeholder="1" min="1"/>
+            </div>
+          </div>
+
+          <!-- Accent Color -->
+          <div class="fg">
+            <label class="fl">AKZENTFARBE</label>
+            <div class="color-row" id="colorPicker">
+              <div class="color-dot selected" style="background:#5b8cff" data-accent="#5b8cff" data-glow="rgba(91,140,255,0.12)" onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#ffaa33" data-accent="#ffaa33" data-glow="rgba(255,170,51,0.1)"   onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#44cc88" data-accent="#44cc88" data-glow="rgba(68,204,136,0.1)"   onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#ff4444" data-accent="#ff4444" data-glow="rgba(255,68,68,0.1)"    onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#cc44ff" data-accent="#cc44ff" data-glow="rgba(204,68,255,0.12)"  onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#ff6644" data-accent="#ff6644" data-glow="rgba(255,102,68,0.1)"   onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#44ddff" data-accent="#44ddff" data-glow="rgba(68,221,255,0.1)"   onclick="pickColor(this)"></div>
+              <div class="color-dot" style="background:#ffdd44" data-accent="#ffdd44" data-glow="rgba(255,221,68,0.1)"   onclick="pickColor(this)"></div>
+            </div>
+            <input type="hidden" id="gAccent" value="#5b8cff"/>
+            <input type="hidden" id="gGlow"   value="rgba(91,140,255,0.12)"/>
+          </div>
+
+          <!-- Image Upload -->
+          <div class="fg">
+            <label class="fl">QUADRATISCHES BILD</label>
+            <div class="img-upload-wrap" onclick="document.getElementById('gImgFile').click()">
+              <input type="file" id="gImgFile" accept="image/*" onchange="handleImgUpload(event)" style="display:none"/>
+              <img class="img-preview" id="gImgPreview" src="" alt="Preview"/>
+              <div class="img-upload-label" id="gImgLabel">Bild hier klicken oder ziehen<br><span style="color:var(--text-muted);font-size:10px">Wird auf 200×200px komprimiert</span></div>
+            </div>
+            <input type="hidden" id="gImgBase64"/>
+          </div>
+
+          <div class="msg" id="gameFormMsg"></div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="fbtn fbtn-admin fbtn-sm" id="gameSaveBtn" onclick="saveGame()"><span id="gameSaveTxt">SPIEL SPEICHERN</span></button>
+            <button class="fbtn fbtn-sm" id="gameCancelBtn" onclick="cancelGameEdit()" style="display:none;border-color:var(--border-mid);color:var(--text-secondary)">ABBRECHEN</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Config -->
+      <div class="adm-panel" id="aPanelConfig">
+        <div class="settings-head" style="color:var(--admin)">ADMIN EINSTELLUNGEN</div>
+        <div class="ch-block" id="cbAdmPw" style="border-color:rgba(204,68,255,.2)">
+          <div class="ch-header" onclick="toggleCh('cbAdmPw')"><div class="ch-left"><span class="ch-label">ADMIN PASSWORT</span><span class="ch-cur">••••••••••••</span></div><span class="ch-arrow">▼</span></div>
+          <div class="ch-body">
+            <div class="msg" id="errAdmPw"></div><div class="msg" id="okAdmPw"></div>
+            <div class="fg"><label class="fl">AKTUELLES PASSWORT</label><input class="fi-inp" id="admPwOld" type="password" placeholder="zur Bestätigung"/></div>
+            <div class="fg-row">
+              <div class="fg"><label class="fl">NEUES PASSWORT</label><input class="fi-inp" id="admPwNew" type="password" placeholder="neues Passwort"/></div>
+              <div class="fg"><label class="fl">WIEDERHOLEN</label><input class="fi-inp" id="admPwNew2" type="password" placeholder="nochmal"/></div>
+            </div>
+            <button class="sbtn" id="btnAdmPw" style="border-color:var(--admin);color:var(--admin)" onclick="changeAdminPw()"><span id="btnAdmPwTxt">PASSWORT ÄNDERN</span></button>
+          </div>
+        </div>
+        <div style="margin-top:16px;padding:14px;border:1px solid var(--border-subtle);background:rgba(0,0,0,.2)">
+          <div class="info-label">SUPABASE PROJEKT</div>
+          <div style="font-family:'Courier New',monospace;font-size:12px;color:var(--text-secondary);margin-top:6px">sigjwzivusuzmhvixtbm.supabase.co</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 
--- ════════════════════════════════════════════════════════════════
--- ADMIN RPCs — alle mit Hash-Verifikation
--- ════════════════════════════════════════════════════════════════
-
--- Alle Games laden (inkl. inaktive, für Admin)
-CREATE OR REPLACE FUNCTION dsn_admin_get_games(p_admin_hash TEXT)
-RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF NOT EXISTS(SELECT 1 FROM dsn_config WHERE key='admin_password' AND value->>'hash'=p_admin_hash) THEN
-    RETURN NULL;
-  END IF;
-  RETURN (
-    SELECT COALESCE(jsonb_agg(
-      jsonb_build_object(
-        'id',           g.id,
-        'name',         g.name,
-        'url',          g.url,
-        'image_base64', g.image_base64,
-        'emoji',        g.emoji,
-        'accent_color', g.accent_color,
-        'glow_color',   g.glow_color,
-        'type_label',   g.type_label,
-        'description',  g.description,
-        'sort_order',   g.sort_order,
-        'active',       g.active,
-        'created_at',   g.created_at
-      ) ORDER BY g.sort_order ASC, g.created_at ASC
-    ), '[]'::JSONB)
-    FROM dsn_games g
-  );
-END; $$;
-
--- Game hinzufügen
-CREATE OR REPLACE FUNCTION dsn_admin_add_game(
-  p_admin_hash  TEXT,
-  p_name        TEXT,
-  p_url         TEXT,
-  p_emoji       TEXT,
-  p_image_base64 TEXT,
-  p_accent_color TEXT,
-  p_glow_color  TEXT,
-  p_type_label  TEXT,
-  p_description TEXT,
-  p_sort_order  INTEGER
-) RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE v_id UUID;
-BEGIN
-  IF NOT EXISTS(SELECT 1 FROM dsn_config WHERE key='admin_password' AND value->>'hash'=p_admin_hash) THEN
-    RETURN jsonb_build_object('error','unauthorized');
-  END IF;
-  INSERT INTO dsn_games(name,url,emoji,image_base64,accent_color,glow_color,type_label,description,sort_order,active)
-    VALUES(p_name,p_url,p_emoji,NULLIF(p_image_base64,''),p_accent_color,p_glow_color,p_type_label,p_description,p_sort_order,true)
-    RETURNING id INTO v_id;
-  RETURN jsonb_build_object('success',true,'id',v_id);
-END; $$;
-
--- Game aktualisieren
-CREATE OR REPLACE FUNCTION dsn_admin_update_game(
-  p_admin_hash   TEXT,
-  p_game_id      UUID,
-  p_name         TEXT,
-  p_url          TEXT,
-  p_emoji        TEXT,
-  p_image_base64 TEXT,
-  p_accent_color TEXT,
-  p_glow_color   TEXT,
-  p_type_label   TEXT,
-  p_description  TEXT,
-  p_sort_order   INTEGER,
-  p_active       BOOLEAN
-) RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF NOT EXISTS(SELECT 1 FROM dsn_config WHERE key='admin_password' AND value->>'hash'=p_admin_hash) THEN
-    RETURN false;
-  END IF;
-  UPDATE dsn_games SET
-    name          = p_name,
-    url           = p_url,
-    emoji         = p_emoji,
-    image_base64  = CASE WHEN p_image_base64 = '__keep__' THEN image_base64 ELSE NULLIF(p_image_base64,'') END,
-    accent_color  = p_accent_color,
-    glow_color    = p_glow_color,
-    type_label    = p_type_label,
-    description   = p_description,
-    sort_order    = p_sort_order,
-    active        = p_active
-  WHERE id = p_game_id;
-  RETURN FOUND;
-END; $$;
-
--- Game löschen
-CREATE OR REPLACE FUNCTION dsn_admin_delete_game(p_admin_hash TEXT, p_game_id UUID)
-RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF NOT EXISTS(SELECT 1 FROM dsn_config WHERE key='admin_password' AND value->>'hash'=p_admin_hash) THEN
-    RETURN false;
-  END IF;
-  DELETE FROM dsn_games WHERE id = p_game_id;
-  RETURN FOUND;
-END; $$;
+<!-- DELETE CONFIRM MODAL -->
+<div class="moverlay" id="delModal">
+  <div class="mcard" style="border-color:rgba(255,68,68,.3)">
+    <div class="mbody">
+      <div class="del-title">LÖSCHEN BESTÄTIGEN</div>
+      <div class="del-msg" id="delMsg"></div>
+      <div class="del-actions">
+        <button class="del-confirm" id="delConfirmBtn" onclick="confirmDelete()"><span id="delBtnTxt">LÖSCHEN</span></button>
+        <button class="del-cancel" onclick="closeDelModal()">ABBRECHEN</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
--- ════════════════════════════════════════════════════════════════
--- EXECUTE-RECHTE
--- ════════════════════════════════════════════════════════════════
-GRANT EXECUTE ON FUNCTION dsn_get_games()                                                                                         TO anon;
-GRANT EXECUTE ON FUNCTION dsn_admin_get_games(TEXT)                                                                               TO anon;
-GRANT EXECUTE ON FUNCTION dsn_admin_add_game(TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,INTEGER)                                TO anon;
-GRANT EXECUTE ON FUNCTION dsn_admin_update_game(TEXT,UUID,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,TEXT,INTEGER,BOOLEAN)                TO anon;
-GRANT EXECUTE ON FUNCTION dsn_admin_delete_game(TEXT,UUID)                                                                        TO anon;
+<script>
+/* ══ CONFIG ══ */
+const SUPABASE_URL  = 'https://sigjwzivusuzmhvixtbm.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpZ2p3eml2dXN1em1odml4dGJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxNTI3MDksImV4cCI6MjA4ODcyODcwOX0.j0yB-NYM5HOkfKVBz24rWMBQNF8w-uEFjX55UGeD30E';
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const DEFAULT_ADM_PW = 'LoeweTiger123?!';
+
+/* ══ CRYPTO ══ */
+function genSalt(){const b=new Uint8Array(32);crypto.getRandomValues(b);return Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');}
+async function hashPw(pw,saltHex){
+  const enc=new TextEncoder(),salt=new Uint8Array(saltHex.match(/.{2}/g).map(h=>parseInt(h,16)));
+  const key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:200000},key,256);
+  return Array.from(new Uint8Array(bits)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ══ SESSION ══ */
+let currentUser=null,adminHashInMemory=null;
+function saveSession(u){const s={id:u.id,username:u.username,real_name:u.real_name,grade:u.grade,school:u.school,show_name:u.show_name,created_at:u.created_at};sessionStorage.setItem('dsn_session',JSON.stringify(s));}
+function getSession(){try{return JSON.parse(sessionStorage.getItem('dsn_session'));}catch{return null;}}
+function clearSession(){sessionStorage.removeItem('dsn_session');currentUser=null;}
+function getDisplay(u){return u.show_name===false?'Privat':(u.real_name||u.username);}
+
+/* ══ INIT ══ */
+window.addEventListener('DOMContentLoaded',async()=>{
+  await ensureAdminPwInDB();
+  loadPublicGames();
+  const s=getSession();
+  if(s){currentUser=s;applyLoggedIn(s);}
+});
+
+async function ensureAdminPwInDB(){
+  try{
+    const{data:salt}=await db.rpc('dsn_get_admin_salt');
+    if(!salt){const s=genSalt(),h=await hashPw(DEFAULT_ADM_PW,s);await db.rpc('dsn_init_admin_password',{p_salt:s,p_hash:h});}
+    localStorage.removeItem('dsn_admin_salt');localStorage.removeItem('dsn_admin_pw_hash');
+  }catch(e){console.error('Admin-Init:',e);}
+}
+
+/* ══ GAMES — public load ══ */
+async function loadPublicGames(){
+  try{
+    const{data:games,error}=await db.rpc('dsn_get_games');
+    if(error)throw error;
+    renderGamesGrid(games||[]);
+  }catch(e){
+    document.getElementById('appsGrid').innerHTML='<div class="apps-loading">Fehler beim Laden der Apps.</div>';
+    console.error(e);
+  }
+}
+
+function renderGamesGrid(games){
+  document.getElementById('gameCount').textContent=String(games.length).padStart(2,'0');
+  const grid=document.getElementById('appsGrid');
+  if(!games.length){grid.innerHTML='<div class="apps-loading">Noch keine Apps verfügbar.</div>';return;}
+  grid.innerHTML=games.map((g,i)=>`
+    <a class="app-card" href="${escHtml(g.url)}" target="_blank"
+       style="--card-accent:${g.accent_color};--card-glow:${g.glow_color};animation-delay:${i*0.07}s">
+      <div class="card-glow"></div>
+      <div class="card-body">
+        ${g.image_base64
+          ?`<img class="card-thumb" src="${g.image_base64}" alt="${escHtml(g.name)}"/>`
+          :`<span class="card-emoji">${g.emoji||'🎮'}</span>`}
+        <div class="card-type">${escHtml(g.type_label||'APP')}</div>
+        <div class="card-name">${escHtml(g.name)}</div>
+        <div class="card-desc">${escHtml(g.description||'')}</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">${escHtml(g.url.replace('https://',''))}</span>
+        <span class="card-launch">ÖFFNEN</span>
+      </div>
+    </a>`).join('');
+}
+
+/* ══ HUB UI ══ */
+function applyLoggedIn(u){
+  document.getElementById('badgeUser').textContent=u.username;
+  document.getElementById('userBadge').classList.add('active');
+  document.getElementById('btnAccount').textContent='MEIN ACCOUNT';
+  document.getElementById('promoBanner').classList.add('hidden');
+  document.getElementById('welcomeName').textContent=(u.real_name||u.username).toUpperCase();
+  const seit=new Date(u.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  document.getElementById('welcomeMeta').textContent=`Klasse ${u.grade||'–'} · Dabei seit ${seit}`;
+  document.getElementById('welcomeBanner').classList.add('active');
+  renderDashboard(u);
+}
+function applyLoggedOut(){
+  document.getElementById('userBadge').classList.remove('active');
+  document.getElementById('btnAccount').textContent='ACCOUNT';
+  document.getElementById('promoBanner').classList.remove('hidden');
+  document.getElementById('welcomeBanner').classList.remove('active');
+}
+function renderDashboard(u){
+  document.getElementById('dashName').textContent   =u.real_name||u.username||'–';
+  document.getElementById('dashUser').textContent   =u.username||'–';
+  document.getElementById('dashGrade').textContent  ='Klasse '+(u.grade||'–');
+  document.getElementById('dashJoined').textContent =u.created_at?new Date(u.created_at).toLocaleDateString('de-DE'):'–';
+  document.getElementById('dashSchool').textContent =u.school||'–';
+  document.getElementById('dashDisplay').textContent=getDisplay(u);
+  document.getElementById('curUser').textContent    =u.username||'–';
+  document.getElementById('curName').textContent    =u.real_name||'–';
+  document.getElementById('curGrade').textContent   ='Klasse '+(u.grade||'–');
+  const showName=u.show_name!==false;
+  document.getElementById('togShowName').checked=showName;
+  updatePrivPreview(showName,u.real_name);
+}
+
+/* ══ ACCOUNT DRAWER ══ */
+function openAccountDrawer(tab){
+  document.getElementById('accOverlay').classList.add('open');
+  document.getElementById('accDrawer').classList.add('open');
+  if(currentUser){
+    document.getElementById('authSection').style.display='none';
+    document.getElementById('dashSection').style.display='block';
+    switchDashTab(['overview','stats','settings'].includes(tab)?tab:'overview');
+  }else{
+    document.getElementById('authSection').style.display='block';
+    document.getElementById('dashSection').style.display='none';
+    switchAuthTab(tab==='register'?'register':'login');
+  }
+}
+function closeAccountDrawer(){document.getElementById('accOverlay').classList.remove('open');document.getElementById('accDrawer').classList.remove('open');}
+function switchAuthTab(t){
+  document.getElementById('tabLogin').classList.toggle('active',t==='login');
+  document.getElementById('tabRegister').classList.toggle('active',t==='register');
+  document.getElementById('panelLogin').classList.toggle('active',t==='login');
+  document.getElementById('panelRegister').classList.toggle('active',t==='register');
+  clearMsgs();
+}
+function switchDashTab(t){
+  ['overview','stats','settings'].forEach(x=>{const c=x[0].toUpperCase()+x.slice(1);document.getElementById('dTab'+c).classList.toggle('active',x===t);document.getElementById('dPanel'+c).classList.toggle('active',x===t);});
+  if(t==='stats')loadStats();
+}
+
+/* ══ LOGIN ══ */
+async function doLogin(){
+  clearMsgs();
+  const username=document.getElementById('loginUser').value.trim().toLowerCase();
+  const password=document.getElementById('loginPass').value;
+  if(!username||!password)return showMsg('loginMsg','Bitte alle Felder ausfüllen.','err');
+  setBtnL('loginBtn','loginBtnTxt','SUCHE ACCOUNT…',true);
+  try{
+    const{data:salt,error:e1}=await db.rpc('dsn_get_salt',{p_username:username});
+    if(e1)throw e1;
+    if(!salt){showMsg('loginMsg','Username nicht gefunden.','err');return;}
+    setBtnL('loginBtn','loginBtnTxt','PRÜFE PASSWORT…',true);
+    const hash=await hashPw(password,salt);
+    const{data:user,error:e2}=await db.rpc('dsn_login',{p_username:username,p_password_hash:hash});
+    if(e2)throw e2;
+    if(!user){showMsg('loginMsg','Falsches Passwort.','err');return;}
+    currentUser=user;saveSession(user);applyLoggedIn(user);
+    document.getElementById('authSection').style.display='none';
+    document.getElementById('dashSection').style.display='block';
+    switchDashTab('overview');
+  }catch(e){showMsg('loginMsg','Fehler: '+e.message,'err');}
+  finally{setBtnL('loginBtn','loginBtnTxt','EINLOGGEN',false);}
+}
+
+/* ══ REGISTER ══ */
+async function doRegister(){
+  clearMsgs();
+  const username=document.getElementById('regUser').value.trim().toLowerCase();
+  const grade=document.getElementById('regGrade').value;
+  const real_name=document.getElementById('regName').value.trim()||username;
+  const school=document.getElementById('regSchool').value;
+  const password=document.getElementById('regPass').value;
+  if(!username||username.length<3)return showMsg('registerMsg','Username mind. 3 Zeichen.','err');
+  if(!grade)return showMsg('registerMsg','Bitte Klasse auswählen.','err');
+  if(!school)return showMsg('registerMsg','Bitte Schule auswählen.','err');
+  if(!password||password.length<6)return showMsg('registerMsg','Passwort mind. 6 Zeichen.','err');
+  setBtnL('registerBtn','registerBtnTxt','PRÜFE USERNAME…',true);
+  try{
+    const{data:available}=await db.rpc('dsn_check_username',{p_username:username});
+    if(!available){showMsg('registerMsg','Username bereits vergeben.','err');return;}
+    setBtnL('registerBtn','registerBtnTxt','VERSCHLÜSSELE…',true);
+    const salt=genSalt(),password_hash=await hashPw(password,salt);
+    setBtnL('registerBtn','registerBtnTxt','SPEICHERE…',true);
+    const{error}=await db.from('dsn_users').insert([{username,real_name,grade,school,salt,password_hash,show_name:true}]);
+    if(error)throw error;
+    showMsg('registerMsg','✓ Account erstellt! Wechsle zum Login…','ok');
+    setTimeout(()=>switchAuthTab('login'),1600);
+  }catch(e){showMsg('registerMsg','Fehler: '+e.message,'err');}
+  finally{setBtnL('registerBtn','registerBtnTxt','ACCOUNT ERSTELLEN',false);}
+}
+
+/* ══ LOGOUT ══ */
+function doLogout(){clearSession();applyLoggedOut();document.getElementById('authSection').style.display='block';document.getElementById('dashSection').style.display='none';switchAuthTab('login');}
+
+/* ══ PRIVACY ══ */
+function updatePrivPreview(showName,realName){const el=document.getElementById('privPreview');el.textContent=showName?(realName||'–'):'Privat';el.className='pv '+(showName?'shown':'hidden');}
+let togTimer=null;
+async function handlePrivacy(){
+  const showName=document.getElementById('togShowName').checked;
+  updatePrivPreview(showName,currentUser.real_name);
+  const msg=document.getElementById('togMsg');msg.textContent='Speichert…';
+  clearTimeout(togTimer);
+  togTimer=setTimeout(async()=>{
+    try{await db.rpc('dsn_update_show_name',{p_user_id:currentUser.id,p_show_name:showName});currentUser={...currentUser,show_name:showName};saveSession(currentUser);renderDashboard(currentUser);msg.textContent='✓ Gespeichert';setTimeout(()=>{msg.textContent='';},2000);}
+    catch{msg.textContent='Fehler!';setTimeout(()=>{msg.textContent='';},2000);}
+  },600);
+}
+
+/* ══ STATS ══ */
+async function loadStats(){
+  const tbody=document.getElementById('statsBody');
+  tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:18px"><span class="spin"></span></td></tr>';
+  try{
+    const{data:games}=await db.rpc('dsn_get_games');
+    setTimeout(()=>{
+      tbody.innerHTML=(games||[]).map(g=>`<tr>
+        <td><div class="gname"><div class="gicon">${g.image_base64?`<img src="${g.image_base64}" alt=""/>`:g.emoji||'🎮'}</div>${escHtml(g.name)}</div></td>
+        <td><span class="sval empty">—</span></td>
+        <td><span class="sval empty">—</span></td>
+        <td><span class="sbadge soon">BALD</span></td>
+      </tr>`).join('');
+      document.getElementById('statsTime').textContent='Stand: '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+    },300);
+  }catch{tbody.innerHTML='<tr><td colspan="4" class="empty-st">Fehler</td></tr>';}
+}
+
+/* ══ CHANGE FIELD ══ */
+const FIELD_CFG={
+  username:{errId:'errUser',okId:'okUser',btnId:'btnUser',txtId:'btnUserTxt',dbField:'username'},
+  name:    {errId:'errName',okId:'okName',btnId:'btnName',txtId:'btnNameTxt',dbField:'real_name'},
+  grade:   {errId:'errGrade',okId:'okGrade',btnId:'btnGrade',txtId:'btnGradeTxt',dbField:'grade'},
+  password:{errId:'errPw',okId:'okPw',btnId:'btnPw',txtId:'btnPwTxt',dbField:null},
+};
+async function changeField(field){
+  const cfg=FIELD_CFG[field];hideMsg(cfg.errId);hideMsg(cfg.okId);
+  let newVal,confirmPw;
+  if(field==='username'){newVal=document.getElementById('newUser').value.trim().toLowerCase();confirmPw=document.getElementById('pwUser').value;if(!newVal||newVal.length<3)return showMsg(cfg.errId,'Username mind. 3 Zeichen.','err');}
+  else if(field==='name'){newVal=document.getElementById('newName').value.trim();confirmPw=document.getElementById('pwName').value;if(!newVal)return showMsg(cfg.errId,'Bitte Vorname eingeben.','err');}
+  else if(field==='grade'){newVal=document.getElementById('newGrade').value;confirmPw=document.getElementById('pwGrade').value;if(!newVal)return showMsg(cfg.errId,'Bitte Klasse auswählen.','err');}
+  else if(field==='password'){confirmPw=document.getElementById('pwOld').value;const p1=document.getElementById('pwNew').value,p2=document.getElementById('pwNew2').value;if(!p1)return showMsg(cfg.errId,'Bitte neues Passwort eingeben.','err');if(p1!==p2)return showMsg(cfg.errId,'Passwörter stimmen nicht überein.','err');newVal=p1;}
+  if(!confirmPw)return showMsg(cfg.errId,'Bitte aktuelles Passwort eingeben.','err');
+  setSBtnL(cfg.btnId,cfg.txtId,'PRÜFE…',true);
+  try{
+    const{data:salt}=await db.rpc('dsn_get_salt',{p_username:currentUser.username});
+    if(!salt)throw new Error('Salt nicht gefunden');
+    const confirmHash=await hashPw(confirmPw,salt);
+    setSBtnL(cfg.btnId,cfg.txtId,'SPEICHERE…',true);
+    if(field==='password'){
+      const newSalt=genSalt(),newHash=await hashPw(newVal,newSalt);
+      const{data:ok}=await db.rpc('dsn_change_password',{p_user_id:currentUser.id,p_old_hash:confirmHash,p_new_salt:newSalt,p_new_hash:newHash});
+      if(!ok){showMsg(cfg.errId,'Falsches Passwort.','err');return;}
+      showMsg(cfg.okId,'✓ Passwort geändert!','ok');
+      ['pwOld','pwNew','pwNew2'].forEach(id=>document.getElementById(id).value='');
+    }else{
+      const{data:result}=await db.rpc('dsn_update_field',{p_user_id:currentUser.id,p_password_hash:confirmHash,p_field:cfg.dbField,p_new_value:newVal});
+      if(!result)throw new Error('Keine Antwort');
+      if(result.error==='wrong_password'){showMsg(cfg.errId,'Falsches Passwort.','err');return;}
+      if(result.error==='username_taken'){showMsg(cfg.errId,'Username bereits vergeben.','err');return;}
+      if(result.error)throw new Error(result.error);
+      currentUser={...currentUser,...result.user};saveSession(currentUser);renderDashboard(currentUser);
+      showMsg(cfg.okId,'✓ Gespeichert!','ok');
+    }
+    setTimeout(()=>hideMsg(cfg.okId),2500);
+  }catch(e){showMsg(cfg.errId,'Fehler: '+e.message,'err');}
+  finally{setSBtnL(cfg.btnId,cfg.txtId,'SPEICHERN',false);}
+}
+
+/* ══ ACCORDION ══ */
+function toggleCh(id){const b=document.getElementById(id),was=b.classList.contains('open');document.querySelectorAll('.ch-block').forEach(x=>x.classList.remove('open'));if(!was)b.classList.add('open');}
+
+/* ══ ADMIN DRAWER ══ */
+function openAdminLogin(){document.getElementById('admPwInput').value='';clearMsg('admLoginMsg');document.getElementById('admOverlay').classList.add('open');document.getElementById('admDrawer').classList.add('open');setTimeout(()=>document.getElementById('admPwInput').focus(),200);}
+function closeAdminDrawer(){document.getElementById('admOverlay').classList.remove('open');document.getElementById('admDrawer').classList.remove('open');}
+async function verifyAdmin(){
+  const pw=document.getElementById('admPwInput').value;
+  if(!pw)return showMsg('admLoginMsg','Bitte Passwort eingeben.','err');
+  setBtnL('admLoginBtn','admLoginBtnTxt','PRÜFE…',true);
+  try{
+    const{data:salt}=await db.rpc('dsn_get_admin_salt');
+    if(!salt)throw new Error('Admin-Config fehlt — SQL-Patch ausführen!');
+    const hash=await hashPw(pw,salt);
+    const{data:ok}=await db.rpc('dsn_verify_admin',{p_hash:hash});
+    if(!ok){showMsg('admLoginMsg','Falsches Admin-Passwort.','err');return;}
+    adminHashInMemory=hash;
+    document.getElementById('admLoginSection').style.display='none';
+    document.getElementById('admDashSection').style.display='block';
+    await loadAdminData();
+  }catch(e){showMsg('admLoginMsg','Fehler: '+e.message,'err');}
+  finally{setBtnL('admLoginBtn','admLoginBtnTxt','ZUGANG ANFORDERN',false);}
+}
+function doAdminLogout(){adminHashInMemory=null;document.getElementById('admDashSection').style.display='none';document.getElementById('admLoginSection').style.display='block';document.getElementById('admPwInput').value='';switchAdmTab('stats');}
+function switchAdmTab(t){
+  ['stats','users','games','config'].forEach(x=>{const c=x[0].toUpperCase()+x.slice(1);document.getElementById('aTab'+c).classList.toggle('active',x===t);document.getElementById('aPanel'+c).classList.toggle('active',x===t);});
+  if(t==='games')loadAdminGames();
+}
+
+/* ══ ADMIN DATA ══ */
+let allUsers=[];
+async function loadAdminData(){
+  if(!adminHashInMemory)return;
+  try{
+    const{data,error}=await db.rpc('dsn_admin_get_users',{p_admin_hash:adminHashInMemory});
+    if(error)throw error;
+    allUsers=data||[];renderAdmStats(allUsers);renderUserTable(allUsers);
+  }catch(e){console.error(e);}
+}
+function renderAdmStats(users){
+  const today=new Date().toDateString();
+  document.getElementById('aStatTotal').textContent=users.length;
+  document.getElementById('aStatToday').textContent=users.filter(u=>u.created_at&&new Date(u.created_at).toDateString()===today).length;
+  document.getElementById('aStatPriv').textContent=users.filter(u=>u.show_name===false).length;
+  const gc={};users.forEach(u=>{if(u.grade)gc[u.grade]=(gc[u.grade]||0)+1;});
+  const gmax=Math.max(...Object.values(gc),1);
+  document.getElementById('admGradeBars').innerHTML=Object.entries(gc).sort((a,b)=>parseInt(a)-parseInt(b)).map(([g,c])=>`<div class="grade-row"><span class="grade-key">Kl.${g}</span><div class="grade-bar-w"><div class="grade-bar-f" style="width:${Math.round(c/gmax*100)}%"></div></div><span class="grade-count">${c}</span></div>`).join('')||'<div class="empty-st">KEINE DATEN</div>';
+  const sc={};users.forEach(u=>{if(u.school)sc[u.school]=(sc[u.school]||0)+1;});
+  const smax=Math.max(...Object.values(sc),1);
+  document.getElementById('admSchoolBars').innerHTML=Object.entries(sc).sort((a,b)=>b[1]-a[1]).map(([s,c])=>`<div class="grade-row"><span class="grade-key" style="width:50px;font-size:10px">${s==='Albert Einstein Gymnasium'?'AEG':s}</span><div class="grade-bar-w"><div class="grade-bar-f blue" style="width:${Math.round(c/smax*100)}%"></div></div><span class="grade-count">${c}</span></div>`).join('')||'<div class="empty-st">KEINE DATEN</div>';
+}
+function renderUserTable(users){
+  document.getElementById('userCount').textContent=users.length;
+  const tbody=document.getElementById('userTableBody');
+  if(!users.length){tbody.innerHTML='<tr><td colspan="6"><div class="empty-st">KEINE ACCOUNTS</div></td></tr>';return;}
+  tbody.innerHTML=users.map(u=>`<tr>
+    <td class="td-uname">${u.username||'–'}</td>
+    <td>${u.real_name||'–'}</td>
+    <td>Kl.${u.grade||'–'}</td>
+    <td style="font-size:11px;color:var(--text-muted)">${u.created_at?new Date(u.created_at).toLocaleDateString('de-DE'):'–'}</td>
+    <td>${u.show_name===false?'<span class="td-priv">JA</span>':''}</td>
+    <td><button class="del-btn" onclick="openDelModal('user','${u.id}','${(u.username||'').replace(/'/g,"\\'")}')">×</button></td>
+  </tr>`).join('');
+}
+function filterUsers(){const q=document.getElementById('userSearch').value.toLowerCase();renderUserTable(allUsers.filter(u=>(u.username||'').toLowerCase().includes(q)||(u.real_name||'').toLowerCase().includes(q)));}
+
+/* ══ GAMES ADMIN ══ */
+let allAdminGames=[];
+async function loadAdminGames(){
+  if(!adminHashInMemory)return;
+  document.getElementById('admGameList').innerHTML='<div class="empty-st"><span class="spin"></span></div>';
+  try{
+    const{data,error}=await db.rpc('dsn_admin_get_games',{p_admin_hash:adminHashInMemory});
+    if(error)throw error;
+    allAdminGames=data||[];
+    renderAdminGames(allAdminGames);
+  }catch(e){document.getElementById('admGameList').innerHTML=`<div class="empty-st">Fehler: ${e.message}</div>`;}
+}
+function renderAdminGames(games){
+  document.getElementById('admGameCount').textContent=games.length;
+  const list=document.getElementById('admGameList');
+  if(!games.length){list.innerHTML='<div class="empty-st">NOCH KEINE SPIELE</div>';return;}
+  list.innerHTML=games.map(g=>`
+    <div class="game-row">
+      <div class="game-row-thumb" style="border-color:${g.accent_color}">
+        ${g.image_base64?`<img src="${g.image_base64}" alt=""/>`:`<span>${g.emoji||'🎮'}</span>`}
+      </div>
+      <div class="game-row-info">
+        <div class="game-row-name">${escHtml(g.name)}</div>
+        <div class="game-row-url">${escHtml(g.url)}</div>
+      </div>
+      <span class="game-row-badge ${g.active?'on':'off'}">${g.active?'AKTIV':'INAKTIV'}</span>
+      <div class="game-row-actions">
+        <button class="icon-btn" title="Bearbeiten" onclick="editGame('${g.id}')">✏️</button>
+        <button class="icon-btn" title="${g.active?'Deaktivieren':'Aktivieren'}" onclick="toggleGameActive('${g.id}',${!g.active})">${g.active?'🔴':'🟢'}</button>
+        <button class="icon-btn del" title="Löschen" onclick="openDelModal('game','${g.id}','${escJs(g.name)}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+/* COLOR PICKER */
+function pickColor(el){
+  document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('gAccent').value=el.dataset.accent;
+  document.getElementById('gGlow').value=el.dataset.glow;
+}
+function setColorPicker(accent){
+  document.querySelectorAll('.color-dot').forEach(d=>{
+    d.classList.toggle('selected',d.dataset.accent===accent);
+  });
+  document.getElementById('gAccent').value=accent;
+}
+
+/* IMAGE UPLOAD */
+async function handleImgUpload(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const base64=await resizeImage(file,200);
+  document.getElementById('gImgBase64').value=base64;
+  const prev=document.getElementById('gImgPreview');
+  prev.src=base64;prev.style.display='block';
+  document.getElementById('gImgLabel').textContent='Bild geladen ✓';
+}
+function resizeImage(file,size){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        const canvas=document.createElement('canvas');
+        canvas.width=size;canvas.height=size;
+        const ctx=canvas.getContext('2d');
+        // Crop to square from center
+        const min=Math.min(img.width,img.height);
+        const sx=(img.width-min)/2,sy=(img.height-min)/2;
+        ctx.drawImage(img,sx,sy,min,min,0,0,size,size);
+        resolve(canvas.toDataURL('image/jpeg',0.85));
+      };
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* EDIT GAME — fills form */
+function editGame(id){
+  const g=allAdminGames.find(x=>x.id===id);
+  if(!g)return;
+  document.getElementById('editGameId').value=g.id;
+  document.getElementById('gName').value=g.name;
+  document.getElementById('gType').value=g.type_label||'';
+  document.getElementById('gUrl').value=g.url;
+  document.getElementById('gDesc').value=g.description||'';
+  document.getElementById('gEmoji').value=g.emoji||'🎮';
+  document.getElementById('gOrder').value=g.sort_order||1;
+  setColorPicker(g.accent_color||'#5b8cff');
+  document.getElementById('gGlow').value=g.glow_color||'rgba(91,140,255,0.12)';
+  // Show existing image
+  if(g.image_base64){
+    const prev=document.getElementById('gImgPreview');
+    prev.src=g.image_base64;prev.style.display='block';
+    document.getElementById('gImgLabel').textContent='Aktuelles Bild (neu hochladen zum Ersetzen)';
+    document.getElementById('gImgBase64').value='__keep__';
+  }else{
+    document.getElementById('gImgPreview').style.display='none';
+    document.getElementById('gImgLabel').textContent='Bild hier klicken oder ziehen';
+    document.getElementById('gImgBase64').value='';
+  }
+  document.getElementById('gameFormTitle').textContent='✏ SPIEL BEARBEITEN';
+  document.getElementById('gameSaveTxt').textContent='ÄNDERUNGEN SPEICHERN';
+  document.getElementById('gameCancelBtn').style.display='inline-block';
+  // Scroll to form
+  document.getElementById('gName').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('gName').focus();
+}
+
+function cancelGameEdit(){
+  document.getElementById('editGameId').value='';
+  document.getElementById('gName').value='';document.getElementById('gType').value='';
+  document.getElementById('gUrl').value='';document.getElementById('gDesc').value='';
+  document.getElementById('gEmoji').value='🎮';document.getElementById('gOrder').value='';
+  document.getElementById('gImgBase64').value='';document.getElementById('gImgPreview').style.display='none';
+  document.getElementById('gImgLabel').textContent='Bild hier klicken oder ziehen';
+  document.getElementById('gameFormTitle').textContent='+ NEUES SPIEL';
+  document.getElementById('gameSaveTxt').textContent='SPIEL SPEICHERN';
+  document.getElementById('gameCancelBtn').style.display='none';
+  hideMsg('gameFormMsg');
+  // Reset color
+  pickColor(document.querySelector('.color-dot'));
+}
+
+async function saveGame(){
+  hideMsg('gameFormMsg');
+  const editId=document.getElementById('editGameId').value;
+  const name=document.getElementById('gName').value.trim();
+  const typeLabel=document.getElementById('gType').value.trim()||'APP';
+  const url=document.getElementById('gUrl').value.trim();
+  const desc=document.getElementById('gDesc').value.trim();
+  const emoji=document.getElementById('gEmoji').value.trim()||'🎮';
+  const order=parseInt(document.getElementById('gOrder').value)||1;
+  const accent=document.getElementById('gAccent').value;
+  const glow=document.getElementById('gGlow').value;
+  const imgBase64=document.getElementById('gImgBase64').value;
+  if(!name)return showMsg('gameFormMsg','Bitte Namen eingeben.','err');
+  if(!url||!url.startsWith('http'))return showMsg('gameFormMsg','Bitte gültige URL eingeben.','err');
+  setSBtnL('gameSaveBtn','gameSaveTxt','SPEICHERE…',true);
+  try{
+    if(editId){
+      const{data:ok}=await db.rpc('dsn_admin_update_game',{
+        p_admin_hash:adminHashInMemory,p_game_id:editId,
+        p_name:name,p_url:url,p_emoji:emoji,p_image_base64:imgBase64,
+        p_accent_color:accent,p_glow_color:glow,p_type_label:typeLabel,
+        p_description:desc,p_sort_order:order,
+        p_active:allAdminGames.find(g=>g.id===editId)?.active??true
+      });
+      if(!ok)throw new Error('Aktualisierung fehlgeschlagen');
+      showMsg('gameMsg','✓ Spiel aktualisiert!','ok');
+    }else{
+      const{data:result,error}=await db.rpc('dsn_admin_add_game',{
+        p_admin_hash:adminHashInMemory,p_name:name,p_url:url,p_emoji:emoji,
+        p_image_base64:imgBase64,p_accent_color:accent,p_glow_color:glow,
+        p_type_label:typeLabel,p_description:desc,p_sort_order:order
+      });
+      if(error)throw error;
+      if(result?.error)throw new Error(result.error);
+      showMsg('gameMsg','✓ Spiel hinzugefügt!','ok');
+    }
+    cancelGameEdit();
+    await loadAdminGames();
+    await loadPublicGames(); // Hub-Grid aktualisieren
+    setTimeout(()=>hideMsg('gameMsg'),3000);
+  }catch(e){showMsg('gameFormMsg','Fehler: '+e.message,'err');}
+  finally{setSBtnL('gameSaveBtn','gameSaveTxt',editId?'ÄNDERUNGEN SPEICHERN':'SPIEL SPEICHERN',false);}
+}
+
+async function toggleGameActive(id,active){
+  if(!adminHashInMemory)return;
+  const g=allAdminGames.find(x=>x.id===id);
+  if(!g)return;
+  try{
+    await db.rpc('dsn_admin_update_game',{
+      p_admin_hash:adminHashInMemory,p_game_id:id,
+      p_name:g.name,p_url:g.url,p_emoji:g.emoji,p_image_base64:'__keep__',
+      p_accent_color:g.accent_color,p_glow_color:g.glow_color,
+      p_type_label:g.type_label,p_description:g.description,
+      p_sort_order:g.sort_order,p_active:active
+    });
+    await loadAdminGames();
+    await loadPublicGames();
+    showMsg('gameMsg',`✓ Spiel ${active?'aktiviert':'deaktiviert'}.`,'ok');
+    setTimeout(()=>hideMsg('gameMsg'),2500);
+  }catch(e){alert('Fehler: '+e.message);}
+}
+
+/* ══ DELETE ══ */
+let pendingDel={type:null,id:null,name:null};
+function openDelModal(type,id,name){
+  pendingDel={type,id,name};
+  document.getElementById('delMsg').innerHTML=`Willst du <strong>${escHtml(name)}</strong> wirklich löschen? Nicht rückgängig machbar.`;
+  document.getElementById('delModal').classList.add('open');
+}
+function closeDelModal(){document.getElementById('delModal').classList.remove('open');pendingDel={type:null,id:null,name:null};}
+async function confirmDelete(){
+  if(!pendingDel.id)return;
+  const btn=document.getElementById('delConfirmBtn'),txt=document.getElementById('delBtnTxt');
+  btn.disabled=true;txt.innerHTML='<span class="spin"></span>LÖSCHE…';
+  try{
+    if(pendingDel.type==='user'){
+      const{data:ok}=await db.rpc('dsn_admin_delete_user',{p_user_id:pendingDel.id,p_admin_hash:adminHashInMemory});
+      if(!ok)throw new Error('Löschen fehlgeschlagen');
+      allUsers=allUsers.filter(u=>u.id!==pendingDel.id);
+      closeDelModal();renderAdmStats(allUsers);filterUsers();
+      showMsg('deleteOkMsg',`✓ Account "${pendingDel.name}" gelöscht.`,'ok');
+      setTimeout(()=>hideMsg('deleteOkMsg'),3000);
+    }else if(pendingDel.type==='game'){
+      const{data:ok}=await db.rpc('dsn_admin_delete_game',{p_admin_hash:adminHashInMemory,p_game_id:pendingDel.id});
+      if(!ok)throw new Error('Löschen fehlgeschlagen');
+      closeDelModal();
+      await loadAdminGames();
+      await loadPublicGames();
+      showMsg('gameMsg',`✓ Spiel "${pendingDel.name}" gelöscht.`,'ok');
+      setTimeout(()=>hideMsg('gameMsg'),3000);
+    }
+  }catch(e){alert('Fehler: '+e.message);}
+  finally{btn.disabled=false;txt.textContent='LÖSCHEN';}
+}
+
+/* ══ ADMIN PW CHANGE ══ */
+async function changeAdminPw(){
+  hideMsg('errAdmPw');hideMsg('okAdmPw');
+  const o=document.getElementById('admPwOld').value,n=document.getElementById('admPwNew').value,n2=document.getElementById('admPwNew2').value;
+  if(!o)return showMsg('errAdmPw','Aktuelles Passwort eingeben.','err');
+  if(!n)return showMsg('errAdmPw','Neues Passwort eingeben.','err');
+  if(n!==n2)return showMsg('errAdmPw','Passwörter stimmen nicht überein.','err');
+  setSBtnL('btnAdmPw','btnAdmPwTxt','PRÜFE…',true);
+  try{
+    const{data:salt}=await db.rpc('dsn_get_admin_salt');
+    if(!salt)throw new Error('Admin-Salt nicht gefunden');
+    const oldHash=await hashPw(o,salt);
+    const{data:valid}=await db.rpc('dsn_verify_admin',{p_hash:oldHash});
+    if(!valid){showMsg('errAdmPw','Falsches aktuelles Passwort.','err');return;}
+    const newSalt=genSalt(),newHash=await hashPw(n,newSalt);
+    const{data:ok}=await db.rpc('dsn_set_admin_password',{p_old_hash:oldHash,p_new_salt:newSalt,p_new_hash:newHash});
+    if(!ok){showMsg('errAdmPw','Fehler beim Ändern.','err');return;}
+    adminHashInMemory=newHash;
+    showMsg('okAdmPw','✓ Admin-Passwort geändert!','ok');
+    ['admPwOld','admPwNew','admPwNew2'].forEach(id=>document.getElementById(id).value='');
+    setTimeout(()=>hideMsg('okAdmPw'),3000);
+  }catch(e){showMsg('errAdmPw','Fehler: '+e.message,'err');}
+  finally{setSBtnL('btnAdmPw','btnAdmPwTxt','PASSWORT ÄNDERN',false);}
+}
+
+/* ══ HELPERS ══ */
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escJs(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
+function clearMsgs(){document.querySelectorAll('.msg').forEach(el=>{el.className='msg';el.textContent='';});}
+function clearMsg(id){const el=document.getElementById(id);if(el){el.className='msg';el.textContent='';}}
+function showMsg(id,text,type){const el=document.getElementById(id);if(!el)return;el.textContent=text;el.className='msg '+type;}
+function hideMsg(id){clearMsg(id);}
+function setBtnL(btnId,txtId,label,loading){document.getElementById(btnId).disabled=loading;document.getElementById(txtId).innerHTML=loading?`<span class="spin"></span>${label}`:label;}
+function setSBtnL(btnId,txtId,label,loading){document.getElementById(btnId).disabled=loading;document.getElementById(txtId).innerHTML=loading?`<span class="spin"></span>${label}`:label;}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeAccountDrawer();closeAdminDrawer();closeDelModal();}
+  if(e.key==='Enter'){
+    if(document.getElementById('accDrawer').classList.contains('open')&&!currentUser)
+      document.getElementById('panelLogin').classList.contains('active')?doLogin():doRegister();
+    if(document.getElementById('admDrawer').classList.contains('open')&&document.getElementById('admLoginSection').style.display!=='none')
+      verifyAdmin();
+  }
+});
+</script>
+</body>
+</html>
