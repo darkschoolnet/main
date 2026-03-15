@@ -727,9 +727,24 @@ async function hashPw(pw,saltHex){
 
 /* ══ SESSION ══ */
 let currentUser=null,adminHashInMemory=null;
-function saveSession(u){const s={id:u.id,username:u.username,real_name:u.real_name,grade:u.grade,school:u.school,show_name:u.show_name,created_at:u.created_at};sessionStorage.setItem('dsn_session',JSON.stringify(s));}
-function getSession(){try{return JSON.parse(sessionStorage.getItem('dsn_session'));}catch{return null;}}
-function clearSession(){sessionStorage.removeItem('dsn_session');currentUser=null;}
+function saveSession(u){
+  const s={id:u.id,username:u.username,real_name:u.real_name,grade:u.grade,school:u.school,show_name:u.show_name,created_at:u.created_at};
+  sessionStorage.setItem('dsn_session',JSON.stringify(s));
+  // Shared across ALL apps on darkschoolnet.github.io (same origin = same localStorage)
+  localStorage.setItem('dsn_shared_session',JSON.stringify(s));
+}
+function getSession(){
+  try{
+    // Prefer sessionStorage (current tab), fall back to localStorage (shared from another app)
+    return JSON.parse(sessionStorage.getItem('dsn_session'))
+        || JSON.parse(localStorage.getItem('dsn_shared_session'));
+  }catch{return null;}
+}
+function clearSession(){
+  sessionStorage.removeItem('dsn_session');
+  localStorage.removeItem('dsn_shared_session'); // Logout auf ALLEN Apps gleichzeitig
+  currentUser=null;
+}
 function getDisplay(u){return u.show_name===false?'Privat':(u.real_name||u.username);}
 
 /* ══ INIT ══ */
