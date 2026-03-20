@@ -42,6 +42,19 @@ header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-su
 .hbtn-admin::before{background:var(--admin);}
 .hbtn-admin:hover{border-color:var(--admin);}
 
+/* ── AD TICKER ── */
+.ad-ticker{display:flex;align-items:center;gap:0;height:36px;overflow:hidden;position:relative;border:1px solid var(--border-subtle);background:var(--bg-card);margin-left:12px;flex-shrink:0;max-width:200px;min-width:120px;transition:opacity .3s;}
+.ad-ticker.hidden{display:none;}
+.ad-ticker-label{font-family:var(--fu);font-size:8px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);writing-mode:vertical-rl;padding:0 5px;border-right:1px solid var(--border-subtle);height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg-surface);}
+.ad-ticker-slot{flex:1;height:100%;overflow:hidden;position:relative;cursor:pointer;}
+.ad-ticker-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s;pointer-events:none;}
+.ad-ticker-slide.active{opacity:1;pointer-events:auto;}
+.ad-ticker-slide img,.ad-ticker-slide video{width:100%;height:100%;object-fit:cover;display:block;}
+.ad-ticker-close{display:none;align-items:center;justify-content:center;width:20px;height:100%;background:none;border:none;border-left:1px solid var(--border-subtle);color:var(--text-muted);cursor:pointer;font-size:10px;flex-shrink:0;transition:color .15s,background .15s;}
+.ad-ticker-close:hover{color:var(--text-white);background:rgba(255,255,255,.05);}
+.ad-ticker-close.visible{display:flex;}
+.ad-ticker-empty{font-family:var(--fu);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:0 10px;}
+
 /* HERO */
 .hero{position:relative;z-index:1;text-align:center;padding:80px 32px 60px;}
 .hero-tag{font-family:var(--fu);font-size:11px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:12px;}
@@ -337,7 +350,131 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
   .info-grid,.fg-row,.fg-row-3,.stat-cards{grid-template-columns:1fr;}
   .card-tag{display:none;}
   .adm-nav{grid-template-columns:repeat(2,1fr);}
+  .ideas-grid{grid-template-columns:1fr;}
+  .ideas-promo-inner{flex-direction:column;gap:16px;}
+  .ideas-tabs{overflow-x:auto;}
 }
+
+/* ══ IDEAS BOARD ══ */
+.ideas-section{position:relative;z-index:1;padding:0 32px 80px;}
+@media(max-width:640px){.ideas-section{padding:0 16px 60px;}.ideas-hero{flex-direction:column;gap:16px;}.ideas-hero-title{font-size:clamp(32px,7vw,56px);}.ideas-form-row{grid-template-columns:1fr;}.ideas-grid{grid-template-columns:1fr;}}
+
+/* Hero */
+.ideas-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:20px;}
+.ideas-hero-title{font-family:var(--fi);font-size:clamp(38px,6vw,68px);letter-spacing:4px;text-transform:uppercase;color:var(--text-white);line-height:.95;margin-bottom:8px;}
+.ideas-hero-title span{color:var(--accent);}
+.ideas-hero-meta{font-family:var(--fu);font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.ideas-hero-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0;}
+.ideas-hero-stats{display:flex;align-items:center;gap:14px;}
+.ideas-hero-num{font-family:var(--fi);font-size:22px;color:var(--text-white);letter-spacing:2px;margin-right:4px;}
+.ideas-hero-lbl{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.ideas-hero-divider{width:1px;height:22px;background:var(--border-mid);}
+.ideas-hero-cd{display:flex;align-items:center;gap:8px;}
+.ideas-cd-dot{width:6px;height:6px;background:var(--warning);border-radius:50%;animation:pulse 1.5s infinite;flex-shrink:0;}
+.ideas-cd-time{font-family:var(--fi);font-size:16px;letter-spacing:2px;color:var(--warning);}
+.ideas-cd-week{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+
+/* CTA button */
+.ideas-cta-btn{font-family:var(--fi);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:8px 18px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;position:relative;overflow:hidden;transition:color .2s;width:100%;}
+.ideas-cta-btn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .22s;z-index:-1;}
+.ideas-cta-btn:hover{color:#fff;}
+.ideas-cta-btn:hover::before{transform:scaleX(1);}
+
+/* Submit form — logged in, always visible, horizontal row */
+.ideas-direct-submit{margin-bottom:20px;}
+.ideas-form-row{display:grid;grid-template-columns:1fr 1fr 2fr auto;gap:8px;align-items:start;}
+.ideas-form-group{display:flex;flex-direction:column;}
+.ideas-inp{width:100%;background:var(--bg-input);border:1px solid var(--border-mid);color:var(--text-white);font-family:var(--fu);font-size:13px;letter-spacing:1px;padding:9px 12px;outline:none;transition:border-color .15s;-webkit-appearance:none;appearance:none;}
+.ideas-inp:focus{border-color:var(--accent);}
+.ideas-inp::placeholder{color:var(--text-muted);}
+.ideas-inp.sel{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;}
+.ideas-inp.sel option{background:#161616;color:var(--text-white);}
+.ideas-textarea{resize:none;height:38px;min-height:38px;}
+.ideas-submit-btn{font-family:var(--fi);font-size:11px;letter-spacing:2px;text-transform:uppercase;background:transparent;color:var(--accent);border:1px solid var(--accent);padding:9px 16px;cursor:pointer;position:relative;overflow:hidden;transition:color .2s;white-space:nowrap;height:38px;}
+.ideas-submit-btn::before{content:'';position:absolute;inset:0;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .2s;z-index:-1;}
+.ideas-submit-btn span{position:relative;z-index:1;}
+.ideas-submit-btn:hover{color:#fff;}
+.ideas-submit-btn:hover::before{transform:scaleX(1);}
+.ideas-submit-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+/* Guest collapsed submit */
+.ideas-guest-collapsed{background:var(--bg-card);border:1px solid var(--border-subtle);margin-bottom:20px;}
+.ideas-guest-toggle{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none;transition:background .2s;}
+.ideas-guest-toggle:hover{background:rgba(255,255,255,.02);}
+.ideas-guest-toggle-title{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);}
+.ideas-guest-arrow{font-size:10px;color:var(--text-muted);transition:transform .22s;}
+.ideas-guest-arrow.open{transform:rotate(180deg);color:var(--accent);}
+.ideas-guest-body{display:none;border-top:1px solid var(--border-subtle);padding:14px 16px;}
+.ideas-guest-body.open{display:block;animation:fadeSlide .2s ease both;}
+
+/* Tabs */
+.ideas-tabs{display:flex;border-bottom:1px solid var(--border-subtle);margin-bottom:16px;}
+.ideas-tab{font-family:var(--fi);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-secondary);padding:10px 16px;cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+.ideas-tab:hover{color:var(--text-primary);}
+.ideas-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.ideas-tab-panel{display:none;}
+.ideas-tab-panel.active{display:block;animation:fadeSlide .2s ease both;}
+
+/* Filter chips */
+.ideas-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.ideas-chip{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--border-mid);background:transparent;color:var(--text-secondary);padding:3px 10px;cursor:pointer;transition:all .15s;}
+.ideas-chip:hover{border-color:var(--border-active);color:var(--text-primary);}
+.ideas-chip.active{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+
+/* Idea cards */
+.ideas-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;}
+.idea-card{background:var(--bg-card);border:1px solid var(--border-subtle);padding:16px;position:relative;transition:border-color .2s;animation:cardIn .4s ease both;}
+.idea-card::before{content:'';position:absolute;top:0;left:0;width:18px;height:18px;border-top:1px solid var(--accent);border-left:1px solid var(--accent);}
+.idea-card:hover{border-color:var(--border-mid);}
+.idea-card.winner-card{border-color:var(--warning);}
+.idea-card.winner-card::before{border-color:var(--warning);}
+.idea-winner-badge{display:inline-flex;align-items:center;gap:4px;font-family:var(--fu);font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--warning);border:1px solid rgba(255,170,51,.25);padding:2px 7px;margin-bottom:8px;}
+.idea-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.idea-author{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.idea-cat{font-family:var(--fu);font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:var(--accent-glow);border:1px solid rgba(91,140,255,.2);padding:1px 7px;}
+.idea-title{font-family:var(--fi);font-size:18px;letter-spacing:2px;text-transform:uppercase;color:var(--text-white);margin-bottom:5px;line-height:1.1;}
+.idea-desc{font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;}
+.idea-footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border-subtle);padding-top:10px;}
+.idea-status{font-family:var(--fu);font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:2px 8px;border:1px solid;}
+.idea-status.s-vorgeschlagen{color:var(--text-secondary);border-color:var(--border-mid);}
+.idea-status.s-abgelehnt{color:var(--danger);border-color:var(--danger);background:var(--danger-glow);}
+.idea-status.s-in_arbeit{color:var(--warning);border-color:var(--warning);background:rgba(255,170,51,.07);}
+.idea-status.s-umgesetzt{color:var(--success);border-color:var(--success);background:rgba(68,204,136,.07);}
+.idea-vote-area{display:flex;align-items:center;gap:7px;}
+.idea-vote-count{font-family:var(--fi);font-size:16px;color:var(--text-white);}
+.btn-idea-vote{font-family:var(--fi);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;color:var(--text-secondary);border:1px solid var(--border-mid);padding:4px 10px;cursor:pointer;position:relative;overflow:hidden;transition:all .15s;display:flex;align-items:center;gap:4px;}
+.btn-idea-vote::before{content:'';position:absolute;inset:0;background:var(--accent-glow);transform:scaleX(0);transform-origin:left;transition:transform .2s;}
+.btn-idea-vote span{position:relative;z-index:1;}
+.btn-idea-vote:hover{border-color:var(--accent);color:var(--accent);}
+.btn-idea-vote:hover::before{transform:scaleX(1);}
+.btn-idea-vote.voted{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.btn-idea-vote.voted::before{transform:scaleX(1);}
+.btn-idea-vote:disabled{opacity:.3;cursor:not-allowed;}
+.btn-idea-vote:disabled:hover{border-color:var(--border-mid);color:var(--text-secondary);}
+.btn-idea-vote:disabled:hover::before{transform:scaleX(0);}
+
+/* Hall of Fame */
+.ideas-hof-list{display:flex;flex-direction:column;gap:2px;}
+.ideas-hof-item{background:var(--bg-card);border:1px solid var(--border-subtle);padding:12px 16px;display:flex;align-items:center;gap:14px;animation:cardIn .4s ease both;}
+.ideas-hof-rank{font-family:var(--fi);font-size:24px;color:var(--text-muted);min-width:28px;text-align:center;}
+.ideas-hof-rank.r1{color:var(--warning);}
+.ideas-hof-rank.r2{color:var(--text-secondary);}
+.ideas-hof-rank.r3{color:#cd7f32;}
+.ideas-hof-info{flex:1;}
+.ideas-hof-title{font-family:var(--fi);font-size:15px;letter-spacing:2px;text-transform:uppercase;color:var(--text-white);margin-bottom:1px;}
+.ideas-hof-meta{font-family:var(--fu);font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
+.ideas-hof-votes{font-family:var(--fi);font-size:18px;color:var(--warning);}
+.ideas-hof-week{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);text-align:right;}
+
+/* Empty / section header */
+.ideas-empty{text-align:center;padding:32px 20px;color:var(--text-muted);grid-column:1/-1;}
+.ideas-section-header{display:flex;align-items:center;gap:16px;margin-bottom:20px;}
+.ideas-section-line{flex:1;height:1px;background:var(--border-subtle);}
+.ideas-section-title{font-family:var(--fi);font-size:14px;letter-spacing:4px;text-transform:uppercase;color:var(--text-secondary);white-space:nowrap;}
+.ideas-section-badge{font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;background:var(--accent-glow);color:var(--accent);border:1px solid rgba(91,140,255,.3);padding:2px 9px;white-space:nowrap;}
+
+/* Admin status select */
+.ideas-admin-sel{font-family:var(--fi);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:var(--bg-input);border:1px solid var(--admin);color:var(--admin);padding:3px 8px;cursor:pointer;outline:none;-webkit-appearance:none;}
 </style>
 </head>
 <body>
@@ -345,6 +482,16 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
 <!-- HEADER -->
 <header>
   <div class="logo">DARK<span>SCHOOL</span>NET</div>
+
+  <!-- AD TICKER -->
+  <div class="ad-ticker" id="adTicker">
+    <div class="ad-ticker-label">AD</div>
+    <div class="ad-ticker-slot" id="adSlot">
+      <div class="ad-ticker-empty" id="adEmpty"></div>
+    </div>
+    <button class="ad-ticker-close" id="adClose" onclick="dismissAd()" title="Werbung schließen">✕</button>
+  </div>
+
   <div class="header-right">
     <div class="user-badge" id="userBadge" onclick="openAccountDrawer('overview')">
       <div class="dot"></div><span id="badgeUser">—</span>
@@ -395,6 +542,124 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
   <div class="apps-grid" id="appsGrid">
     <div class="apps-loading"><span class="spin"></span> LÄDT…</div>
   </div>
+</section>
+
+<!-- ══ IDEAS BOARD ══ -->
+<section class="ideas-section" id="ideasSection">
+
+  <!-- Header -->
+  <div class="ideas-section-header">
+    <span class="ideas-section-title">GAME IDEAS</span>
+    <div class="ideas-section-line"></div>
+    <span class="ideas-section-badge" id="ideasWeekBadge">…</span>
+  </div>
+
+  <!-- Hero-Zeile: große Überschrift + Countdown + ggf. Login-CTA -->
+  <div class="ideas-hero">
+    <div class="ideas-hero-left">
+      <div class="ideas-hero-title">DEINE IDEE.<br><span>NÄCHSTES GAME.</span></div>
+      <div class="ideas-hero-meta" id="ideasHeroMeta">Jeden Freitag 15:45 Uhr wird die meistgevotete Idee umgesetzt.</div>
+    </div>
+    <div class="ideas-hero-right">
+      <div class="ideas-hero-stats">
+        <div><span class="ideas-hero-num" id="ideasStatCount">—</span><span class="ideas-hero-lbl">diese Woche</span></div>
+        <div class="ideas-hero-divider"></div>
+        <div><span class="ideas-hero-num" id="ideasStatVotes">—</span><span class="ideas-hero-lbl">votes</span></div>
+        <div class="ideas-hero-divider"></div>
+        <div><span class="ideas-hero-num" id="ideasStatWinners">—</span><span class="ideas-hero-lbl">gewinner</span></div>
+      </div>
+      <div class="ideas-hero-cd">
+        <span class="ideas-cd-dot"></span>
+        <span class="ideas-cd-time" id="ideasCdTimer">—</span>
+        <span class="ideas-cd-week" id="ideasCdWeek"></span>
+      </div>
+      <div id="ideasPromoActions" style="display:none;margin-top:12px;display:none;">
+        <button class="ideas-cta-btn" onclick="openAccountDrawer('login')">EINLOGGEN &amp; VOTEN →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBMIT — eingeloggt: direkt sichtbar -->
+  <div class="ideas-direct-submit" id="ideasDirectSubmit" style="display:none;">
+    <div class="ideas-form-row">
+      <div class="ideas-form-group">
+        <input class="ideas-inp" id="ideaTitleInput" type="text" placeholder="Spieltitel…" maxlength="60"/>
+      </div>
+      <div class="ideas-form-group">
+        <select class="ideas-inp sel" id="ideaCatSelect">
+          <option value="action">Action</option>
+          <option value="puzzle">Puzzle</option>
+          <option value="strategy">Strategy</option>
+          <option value="rpg">RPG</option>
+          <option value="racing">Racing</option>
+          <option value="arcade">Arcade</option>
+          <option value="multiplayer">Multiplayer</option>
+          <option value="sonstiges">Sonstiges</option>
+        </select>
+      </div>
+      <div class="ideas-form-group">
+        <textarea class="ideas-inp ideas-textarea" id="ideaDescInput" placeholder="Kurze Beschreibung…" maxlength="300"></textarea>
+      </div>
+      <button class="ideas-submit-btn" id="ideaSubmitBtn" onclick="submitIdeaBoard()"><span>▶ EINREICHEN</span></button>
+    </div>
+    <div id="ideaSubmitMsg" style="font-family:var(--fu);font-size:12px;letter-spacing:1px;color:var(--success);margin-top:8px;display:none;"></div>
+  </div>
+
+  <!-- SUBMIT — Gast: zugeklappt -->
+  <div class="ideas-guest-collapsed" id="ideasGuestSubmit" style="display:none;">
+    <div class="ideas-guest-toggle" onclick="toggleIdeasGuest('ideasGuestSubmit')">
+      <span class="ideas-guest-toggle-title">+ IDEE EINREICHEN</span>
+      <span class="ideas-guest-arrow" id="ideasGuestSubmitArrow">▼</span>
+    </div>
+    <div class="ideas-guest-body" id="ideasGuestSubmitBody">
+      <button class="ideas-cta-btn" onclick="openAccountDrawer('login')">EINLOGGEN</button>
+      <button class="ideas-cta-btn" style="margin-top:6px;border-color:var(--border-mid);color:var(--text-secondary);" onclick="openAccountDrawer('register')">REGISTRIEREN</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="ideas-tabs">
+    <button class="ideas-tab active" id="itab-current" onclick="switchIdeasTab('current')">Diese Woche</button>
+    <button class="ideas-tab" id="itab-all" onclick="switchIdeasTab('all')">Alle</button>
+    <button class="ideas-tab" id="itab-hof" onclick="switchIdeasTab('hof')">🏆 Hall of Fame</button>
+  </div>
+
+  <!-- TAB: aktuelle Woche -->
+  <div class="ideas-tab-panel active" id="ipanel-current">
+    <div class="ideas-filters" id="ideasFilterCurrent">
+      <button class="ideas-chip active" onclick="setIdeasFilter(this,'current','all')">Alle</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'current','action')">Action</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'current','puzzle')">Puzzle</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'current','strategy')">Strategy</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'current','rpg')">RPG</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'current','multiplayer')">Multi</button>
+    </div>
+    <div class="ideas-grid" id="ideasGridCurrent">
+      <div class="ideas-empty"><div style="font-family:var(--fu);font-size:11px;letter-spacing:2px;color:var(--text-muted);">LÄDT…</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: alle Ideen -->
+  <div class="ideas-tab-panel" id="ipanel-all">
+    <div class="ideas-filters" id="ideasFilterAll">
+      <button class="ideas-chip active" onclick="setIdeasFilter(this,'all','all')">Alle</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'all','vorgeschlagen')">Vorgeschlagen</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'all','in_arbeit')">In Arbeit</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'all','umgesetzt')">Umgesetzt</button>
+      <button class="ideas-chip" onclick="setIdeasFilter(this,'all','abgelehnt')">Abgelehnt</button>
+    </div>
+    <div class="ideas-grid" id="ideasGridAll">
+      <div class="ideas-empty"><div style="font-family:var(--fu);font-size:11px;letter-spacing:2px;color:var(--text-muted);">LÄDT…</div></div>
+    </div>
+  </div>
+
+  <!-- TAB: Hall of Fame -->
+  <div class="ideas-tab-panel" id="ipanel-hof">
+    <div class="ideas-hof-list" id="ideasHofList">
+      <div class="ideas-empty"><div style="font-family:var(--fu);font-size:11px;letter-spacing:2px;color:var(--text-muted);">LÄDT…</div></div>
+    </div>
+  </div>
+
 </section>
 
 <footer>
@@ -526,6 +791,23 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
               <div class="fg"><label class="fl">AKTUELLES PW</label><input class="fi-inp" id="pwGrade" type="password" placeholder="zur Bestätigung"/></div>
             </div>
             <button class="sbtn" id="btnGrade" onclick="changeField('grade')"><span id="btnGradeTxt">SPEICHERN</span></button>
+          </div>
+        </div>
+        <div class="ch-block" id="cbSchool">
+          <div class="ch-header" onclick="toggleCh('cbSchool')"><div class="ch-left"><span class="ch-label">SCHULE</span><span class="ch-cur" id="curSchool">–</span></div><span class="ch-arrow">▼</span></div>
+          <div class="ch-body">
+            <div class="msg" id="errSchool"></div><div class="msg" id="okSchool"></div>
+            <div class="fg-row">
+              <div class="fg"><label class="fl">NEUE SCHULE</label>
+                <select class="fi-inp" id="newSchool">
+                  <option value="" disabled selected>— wählen —</option>
+                  <option value="Albert Einstein Gymnasium">Albert Einstein Gymnasium</option>
+                  <option value="Andere Schule">Andere Schule</option>
+                </select>
+              </div>
+              <div class="fg"><label class="fl">AKTUELLES PW</label><input class="fi-inp" id="pwSchool" type="password" placeholder="zur Bestätigung"/></div>
+            </div>
+            <button class="sbtn" id="btnSchool" onclick="changeField('school')"><span id="btnSchoolTxt">SPEICHERN</span></button>
           </div>
         </div>
         <div class="ch-block" id="cbPw">
@@ -688,6 +970,44 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
           <div class="info-label">SUPABASE PROJEKT</div>
           <div style="font-family:'Courier New',monospace;font-size:12px;color:var(--text-secondary);margin-top:6px">sigjwzivusuzmhvixtbm.supabase.co</div>
         </div>
+
+        <!-- AD MANAGER -->
+        <div style="margin-top:16px;" id="adManagerSection">
+          <div class="settings-head" style="color:var(--admin);font-size:13px;margin-bottom:12px;">WERBETAFEL VERWALTEN</div>
+          <div id="adAdminList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+          <div style="border:1px solid rgba(204,68,255,.2);padding:14px;background:rgba(0,0,0,.2);">
+            <div style="font-family:var(--fu);font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--admin);margin-bottom:10px;">+ NEUES MEDIA HOCHLADEN</div>
+            <div class="fg-row">
+              <div class="fg">
+                <label class="fl">TYP</label>
+                <select class="fi-inp" id="adType" style="border-color:rgba(204,68,255,.3)">
+                  <option value="image">Bild</option>
+                  <option value="video">Video</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label class="fl">ANZEIGEDAUER (Sek.)</label>
+                <input class="fi-inp" id="adDuration" type="number" value="5" min="2" max="30" style="border-color:rgba(204,68,255,.3)"/>
+              </div>
+            </div>
+            <div class="fg">
+              <label class="fl">LINK (optional)</label>
+              <input class="fi-inp" id="adLink" type="text" placeholder="https://…" style="border-color:rgba(204,68,255,.3)"/>
+            </div>
+            <div class="fg">
+              <label class="fl">DATEI</label>
+              <div class="img-upload-wrap" onclick="document.getElementById('adFileInput').click()" style="border-color:rgba(204,68,255,.3)">
+                <input type="file" id="adFileInput" accept="image/*,video/*" onchange="handleAdUpload(event)" style="display:none"/>
+                <img class="img-preview" id="adPreviewImg" src="" alt="" style="display:none;width:160px;height:40px;object-fit:cover;"/>
+                <div class="img-upload-label" id="adUploadLabel">Bild oder Video auswählen<br><span style="color:var(--text-muted);font-size:10px">Wird auf 200×50px komprimiert</span></div>
+              </div>
+              <input type="hidden" id="adFileBase64"/>
+              <input type="hidden" id="adFileMime"/>
+            </div>
+            <div class="msg" id="adMsg"></div>
+            <button class="fbtn fbtn-admin fbtn-sm" onclick="saveAd()" style="margin-top:8px"><span id="adSaveTxt">AD SPEICHERN</span></button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -753,6 +1073,8 @@ window.addEventListener('DOMContentLoaded',async()=>{
   loadPublicGames();
   const s=getSession();
   if(s){currentUser=s;applyLoggedIn(s);}
+  else{initIdeasBoard();}
+  loadAds();
 });
 
 async function ensureAdminPwInDB(){
@@ -809,12 +1131,15 @@ function applyLoggedIn(u){
   document.getElementById('welcomeMeta').textContent=`Klasse ${u.grade||'–'} · Dabei seit ${seit}`;
   document.getElementById('welcomeBanner').classList.add('active');
   renderDashboard(u);
+  initIdeasBoard();
+  const adCloseBtn=document.getElementById('adClose');if(adCloseBtn)adCloseBtn.classList.add('visible');
 }
 function applyLoggedOut(){
   document.getElementById('userBadge').classList.remove('active');
   document.getElementById('btnAccount').textContent='ACCOUNT';
   document.getElementById('promoBanner').classList.remove('hidden');
   document.getElementById('welcomeBanner').classList.remove('active');
+  initIdeasBoard();
 }
 function renderDashboard(u){
   document.getElementById('dashName').textContent   =u.real_name||u.username||'–';
@@ -826,6 +1151,7 @@ function renderDashboard(u){
   document.getElementById('curUser').textContent    =u.username||'–';
   document.getElementById('curName').textContent    =u.real_name||'–';
   document.getElementById('curGrade').textContent   ='Klasse '+(u.grade||'–');
+  document.getElementById('curSchool').textContent  =u.school||'–';
   const showName=u.show_name!==false;
   document.getElementById('togShowName').checked=showName;
   updatePrivPreview(showName,u.real_name);
@@ -949,6 +1275,7 @@ const FIELD_CFG={
   username:{errId:'errUser',okId:'okUser',btnId:'btnUser',txtId:'btnUserTxt',dbField:'username'},
   name:    {errId:'errName',okId:'okName',btnId:'btnName',txtId:'btnNameTxt',dbField:'real_name'},
   grade:   {errId:'errGrade',okId:'okGrade',btnId:'btnGrade',txtId:'btnGradeTxt',dbField:'grade'},
+  school:  {errId:'errSchool',okId:'okSchool',btnId:'btnSchool',txtId:'btnSchoolTxt',dbField:'school'},
   password:{errId:'errPw',okId:'okPw',btnId:'btnPw',txtId:'btnPwTxt',dbField:null},
 };
 async function changeField(field){
@@ -957,6 +1284,7 @@ async function changeField(field){
   if(field==='username'){newVal=document.getElementById('newUser').value.trim().toLowerCase();confirmPw=document.getElementById('pwUser').value;if(!newVal||newVal.length<3)return showMsg(cfg.errId,'Username mind. 3 Zeichen.','err');}
   else if(field==='name'){newVal=document.getElementById('newName').value.trim();confirmPw=document.getElementById('pwName').value;if(!newVal)return showMsg(cfg.errId,'Bitte Vorname eingeben.','err');}
   else if(field==='grade'){newVal=document.getElementById('newGrade').value;confirmPw=document.getElementById('pwGrade').value;if(!newVal)return showMsg(cfg.errId,'Bitte Klasse auswählen.','err');}
+  else if(field==='school'){newVal=document.getElementById('newSchool').value;confirmPw=document.getElementById('pwSchool').value;if(!newVal)return showMsg(cfg.errId,'Bitte Schule auswählen.','err');}
   else if(field==='password'){confirmPw=document.getElementById('pwOld').value;const p1=document.getElementById('pwNew').value,p2=document.getElementById('pwNew2').value;if(!p1)return showMsg(cfg.errId,'Bitte neues Passwort eingeben.','err');if(p1!==p2)return showMsg(cfg.errId,'Passwörter stimmen nicht überein.','err');newVal=p1;}
   if(!confirmPw)return showMsg(cfg.errId,'Bitte aktuelles Passwort eingeben.','err');
   setSBtnL(cfg.btnId,cfg.txtId,'PRÜFE…',true);
@@ -1005,6 +1333,7 @@ async function verifyAdmin(){
     document.getElementById('admLoginSection').style.display='none';
     document.getElementById('admDashSection').style.display='block';
     await loadAdminData();
+    await loadAdminAds();
   }catch(e){showMsg('admLoginMsg','Fehler: '+e.message,'err');}
   finally{setBtnL('admLoginBtn','admLoginBtnTxt','ZUGANG ANFORDERN',false);}
 }
@@ -1012,6 +1341,7 @@ function doAdminLogout(){adminHashInMemory=null;document.getElementById('admDash
 function switchAdmTab(t){
   ['stats','users','games','config'].forEach(x=>{const c=x[0].toUpperCase()+x.slice(1);document.getElementById('aTab'+c).classList.toggle('active',x===t);document.getElementById('aPanel'+c).classList.toggle('active',x===t);});
   if(t==='games')loadAdminGames();
+  if(t==='config')loadAdminAds();
 }
 
 /* ══ ADMIN DATA ══ */
@@ -1307,6 +1637,448 @@ function showMsg(id,text,type){const el=document.getElementById(id);if(!el)retur
 function hideMsg(id){clearMsg(id);}
 function setBtnL(btnId,txtId,label,loading){document.getElementById(btnId).disabled=loading;document.getElementById(txtId).innerHTML=loading?`<span class="spin"></span>${label}`:label;}
 function setSBtnL(btnId,txtId,label,loading){document.getElementById(btnId).disabled=loading;document.getElementById(txtId).innerHTML=loading?`<span class="spin"></span>${label}`:label;}
+
+
+/* ══ IDEAS BOARD ══ */
+const IDEAS_DEVICE_KEY='dsn_device_id';
+const IDEAS_VOTED_KEY='dsn_voted_ideas';
+
+let ideasCache=[];
+let ideasAllCache=[];
+let ideasActiveFilter={current:'all',all:'all'};
+let ideasCdInterval=null;
+
+function ideasGetOrCreateDeviceId(){
+  let id=localStorage.getItem(IDEAS_DEVICE_KEY);
+  if(!id){const b=new Uint8Array(16);crypto.getRandomValues(b);id=Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');localStorage.setItem(IDEAS_DEVICE_KEY,id);}
+  return id;
+}
+const ideasDeviceId=ideasGetOrCreateDeviceId();
+
+function ideasGetVoted(){const v=localStorage.getItem(IDEAS_VOTED_KEY);return v?v.split(',').filter(Boolean):[];}
+function ideasSaveVoted(arr){localStorage.setItem(IDEAS_VOTED_KEY,arr.join(','));}
+function ideasHasVoted(id){return ideasGetVoted().includes(String(id));}
+
+/* German week key (same logic as ideas board) */
+function ideasGetGermanDate(){return new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Berlin'}));}
+function ideasGetISOWeekKey(date){
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  const day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);
+  const y=new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  const wn=Math.ceil((((d-y)/86400000)+1)/7);
+  return `${d.getUTCFullYear()}-W${String(wn).padStart(2,'0')}`;
+}
+function ideasGetActiveWeekKey(){
+  const now=ideasGetGermanDate();
+  const day=now.getDay(),h=now.getHours(),m=now.getMinutes();
+  const past=(day===5&&(h>15||(h===15&&m>=45)))||day===6;
+  if(past){const n=new Date(now);n.setDate(now.getDate()+(8-day)%7);return ideasGetISOWeekKey(n);}
+  return ideasGetISOWeekKey(now);
+}
+function ideasGetNextFri(){
+  const now=ideasGetGermanDate();
+  const day=now.getDay(),h=now.getHours(),m=now.getMinutes();
+  let d=(5-day+7)%7;
+  if(day===5&&(h<15||(h===15&&m<45)))d=0;
+  else if(d===0)d=7;
+  const t=new Date(now);t.setDate(now.getDate()+d);t.setHours(15,45,0,0);
+  return t-now;
+}
+function ideasFmtCd(ms){
+  if(ms<=0)return'00:00:00';
+  const ts=Math.floor(ms/1000),d=Math.floor(ts/86400),h=Math.floor((ts%86400)/3600),mi=Math.floor((ts%3600)/60),s=ts%60;
+  if(d>0)return`${d}T ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return`${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function ideasStartCountdown(){
+  if(ideasCdInterval)clearInterval(ideasCdInterval);
+  const tick=()=>{
+    const ms=ideasGetNextFri();
+    const el=document.getElementById('ideasCdTimer');
+    if(el)el.textContent=ideasFmtCd(ms);
+  };
+  tick();ideasCdInterval=setInterval(tick,1000);
+  const wk=document.getElementById('ideasCdWeek');
+  if(wk)wk.textContent=ideasGetActiveWeekKey();
+  const badge=document.getElementById('ideasWeekBadge');
+  if(badge)badge.textContent=ideasGetActiveWeekKey();
+}
+
+/* TABS */
+function switchIdeasTab(name){
+  ['current','all','hof'].forEach(t=>{
+    document.getElementById('itab-'+t).classList.toggle('active',t===name);
+    document.getElementById('ipanel-'+t).classList.toggle('active',t===name);
+  });
+  if(name==='all')loadIdeasAll();
+  if(name==='hof')loadIdeasHof();
+}
+
+function setIdeasFilter(el,tab,val){
+  el.closest('.ideas-filters').querySelectorAll('.ideas-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  ideasActiveFilter[tab]=val;
+  if(tab==='current')renderIdeasCurrent();
+  if(tab==='all')renderIdeasAll();
+}
+
+function toggleIdeasGuest(blockId){
+  const body=document.getElementById(blockId+'Body');
+  const arrow=document.getElementById(blockId+'Arrow');
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  if(arrow)arrow.classList.toggle('open',!isOpen);
+}
+
+/* LOAD DATA */
+async function loadIdeasCurrent(){
+  const weekKey=ideasGetActiveWeekKey();
+  const grid=document.getElementById('ideasGridCurrent');
+  try{
+    const{data,error}=await db.from('dsn_game_ideas').select('*').eq('week_key',weekKey).order('created_at',{ascending:false});
+    if(error){
+      grid.innerHTML='<div class="ideas-empty" style="grid-column:1/-1"><div class="ideas-empty-icon">⚠️</div><div class="ideas-empty-title">Tabellen fehlen</div><div class="ideas-empty-sub">SQL-Setup in Supabase ausführen — siehe HTML-Kommentar am Ende der Datei.</div></div>';
+      document.getElementById('ideasStatCount').textContent='–';
+      document.getElementById('ideasStatVotes').textContent='–';
+      document.getElementById('ideasStatWinners').textContent='–';
+      console.error('Ideas DB error:',error);return;
+    }
+    const ids=(data||[]).map(i=>i.id);
+    let vc={};
+    if(ids.length){
+      const{data:vd}=await db.from('dsn_idea_votes').select('idea_id').in('idea_id',ids);
+      (vd||[]).forEach(v=>{vc[v.idea_id]=(vc[v.idea_id]||0)+1;});
+    }
+    ideasCache=(data||[]).map(i=>({...i,vote_count:vc[i.id]||0}));
+    renderIdeasCurrent();
+    updateIdeasStats(ideasCache);
+  }catch(e){
+    grid.innerHTML='<div class="ideas-empty" style="grid-column:1/-1"><div class="ideas-empty-icon">⚠️</div><div class="ideas-empty-title">Verbindungsfehler</div><div class="ideas-empty-sub">'+(e.message||'Unbekannter Fehler')+'</div></div>';
+    console.error(e);
+  }
+}
+
+async function loadIdeasAll(){
+  document.getElementById('ideasGridAll').innerHTML='<div class="ideas-empty"><div style="font-family:var(--fu);font-size:11px;letter-spacing:2px;color:var(--text-muted);">LÄDT…</div></div>';
+  const{data}=await db.from('dsn_game_ideas').select('*').order('created_at',{ascending:false});
+  const ids=(data||[]).map(i=>i.id);
+  let vc={};
+  if(ids.length){const{data:vd}=await db.from('dsn_idea_votes').select('idea_id').in('idea_id',ids);(vd||[]).forEach(v=>{vc[v.idea_id]=(vc[v.idea_id]||0)+1;});}
+  ideasAllCache=(data||[]).map(i=>({...i,vote_count:vc[i.id]||0}));
+  renderIdeasAll();
+}
+
+async function loadIdeasHof(){
+  document.getElementById('ideasHofList').innerHTML='<div class="ideas-empty"><div style="font-family:var(--fu);font-size:11px;letter-spacing:2px;color:var(--text-muted);">LÄDT…</div></div>';
+  const{data}=await db.from('dsn_game_ideas').select('*').eq('is_winner',true).order('winner_votes',{ascending:false});
+  const winners=data||[];
+  const el=document.getElementById('ideasHofList');
+  if(!winners.length){
+    el.innerHTML='<div class="ideas-empty"><div class="ideas-empty-icon">🏆</div><div class="ideas-empty-title">Noch keine Gewinner</div><div class="ideas-empty-sub">Jeden Freitag um 15:45 Uhr wird die meistgevotete Idee gekrönt</div></div>';
+    return;
+  }
+  el.innerHTML='';
+  const list=document.createElement('div');list.className='ideas-hof-list';
+  winners.forEach((w,i)=>{
+    const rk=i===0?'r1':i===1?'r2':i===2?'r3':'';
+    const item=document.createElement('div');item.className='ideas-hof-item';item.style.animationDelay=`${i*.05}s`;
+    item.innerHTML=`<div class="ideas-hof-rank ${rk}">${i+1}</div><div class="ideas-hof-info"><div class="ideas-hof-title">${escHtml(w.title)}</div><div class="ideas-hof-meta">${escHtml(w.submitted_by_username)} · ${escHtml(w.category||'—')}</div></div><div><div class="ideas-hof-week">${escHtml(w.week_key||'—')}</div></div><div class="ideas-hof-votes">▲ ${w.winner_votes||0}</div>`;
+    list.appendChild(item);
+  });
+  el.appendChild(list);
+  document.getElementById('ideasStatWinners').textContent=winners.length;
+}
+
+/* RENDER */
+function renderIdeasCurrent(){
+  let ideas=[...ideasCache];
+  const f=ideasActiveFilter.current;
+  if(f!=='all')ideas=ideas.filter(i=>i.category===f);
+  ideas.sort((a,b)=>b.vote_count-a.vote_count);
+  renderIdeasToGrid('ideasGridCurrent',ideas);
+}
+
+function renderIdeasAll(){
+  let ideas=[...ideasAllCache];
+  const f=ideasActiveFilter.all;
+  if(f!=='all')ideas=ideas.filter(i=>i.status===f);
+  ideas.sort((a,b)=>b.vote_count-a.vote_count);
+  renderIdeasToGrid('ideasGridAll',ideas);
+}
+
+function renderIdeasToGrid(gridId,ideas){
+  const grid=document.getElementById(gridId);
+  if(!ideas||!ideas.length){
+    grid.innerHTML=`<div class="ideas-empty"><div class="ideas-empty-icon">💡</div><div class="ideas-empty-title">Keine Ideen</div><div class="ideas-empty-sub">${currentUser?'Reiche als Erster eine Idee ein!':'Melde dich an und reiche eine Idee ein!'}</div></div>`;
+    return;
+  }
+  grid.innerHTML='';
+  ideas.forEach((idea,idx)=>{
+    const voted=ideasHasVoted(idea.id);
+    const isWin=idea.is_winner;
+    const card=document.createElement('div');
+    card.className=`idea-card${isWin?' winner-card':''}`;
+    card.style.animationDelay=`${idx*.04}s`;
+    const voteDisabled=!currentUser?'disabled':'';
+    const voteTitle=!currentUser?'title="Einloggen zum Voten"':'';
+    const sc=ideasStatusClass(idea.status),sl=ideasStatusLabel(idea.status);
+    card.innerHTML=`
+      ${isWin?'<div class="idea-winner-badge">🏆 WOCHENGEWINNER</div>':''}
+      <div class="idea-meta"><span class="idea-author">von ${escHtml(idea.submitted_by_username)}</span><span class="idea-cat">${escHtml(idea.category||'misc')}</span></div>
+      <div class="idea-title">${escHtml(idea.title)}</div>
+      <div class="idea-desc">${escHtml(idea.description)}</div>
+      <div class="idea-footer">
+        <span class="idea-status ${sc}">${sl}</span>
+        <div class="idea-vote-area">
+          <span class="idea-vote-count">${idea.vote_count||0}</span>
+          <button class="btn-idea-vote${voted?' voted':''}" onclick="ideaVote('${idea.id}')" ${voted?'disabled':voteDisabled} ${voteTitle}>
+            <span>▲ ${voted?'VOTED':'VOTE'}</span>
+          </button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* SUBMIT */
+async function submitIdeaBoard(){
+  if(!currentUser)return;
+  const title=document.getElementById('ideaTitleInput').value.trim();
+  const desc=document.getElementById('ideaDescInput').value.trim();
+  const cat=document.getElementById('ideaCatSelect').value;
+  const msgEl=document.getElementById('ideaSubmitMsg');
+  msgEl.style.display='none';
+  if(!title||!desc){msgEl.style.cssText='display:block;color:var(--danger);font-family:var(--fu);font-size:12px;letter-spacing:1px;margin-top:8px;';msgEl.textContent='Bitte Titel und Beschreibung ausfüllen.';return;}
+  const btn=document.getElementById('ideaSubmitBtn');
+  btn.disabled=true;btn.querySelector('span').innerHTML='<span class="spin"></span>EINREICHEN…';
+  const{error}=await db.from('dsn_game_ideas').insert({title,description:desc,category:cat,submitted_by_username:currentUser.username,status:'vorgeschlagen',week_key:ideasGetActiveWeekKey(),is_winner:false});
+  btn.disabled=false;btn.querySelector('span').textContent='▶ IDEE EINREICHEN';
+  if(error){msgEl.style.cssText='display:block;color:var(--danger);font-family:var(--fu);font-size:12px;letter-spacing:1px;margin-top:8px;';msgEl.textContent='Fehler: '+error.message;return;}
+  document.getElementById('ideaTitleInput').value='';
+  document.getElementById('ideaDescInput').value='';
+  msgEl.style.cssText='display:block;color:var(--success);font-family:var(--fu);font-size:12px;letter-spacing:1px;margin-top:8px;';
+  msgEl.textContent='✓ Idee eingereicht!';
+  setTimeout(()=>{msgEl.style.display='none';},3000);
+  loadIdeasCurrent();
+}
+
+/* VOTE */
+async function ideaVote(ideaId){
+  if(!currentUser){openAccountDrawer('login');return;}
+  if(ideasHasVoted(ideaId))return;
+  const{error}=await db.from('dsn_idea_votes').insert({idea_id:ideaId,device_id:ideasDeviceId});
+  if(error){
+    if(error.code==='23505'){const v=ideasGetVoted();v.push(ideaId);ideasSaveVoted(v);}
+    return;
+  }
+  const v=ideasGetVoted();v.push(ideaId);ideasSaveVoted(v);
+  const c=ideasCache.find(i=>i.id===ideaId);if(c)c.vote_count=(c.vote_count||0)+1;
+  const ca=ideasAllCache.find(i=>i.id===ideaId);if(ca)ca.vote_count=(ca.vote_count||0)+1;
+  renderIdeasCurrent();
+}
+
+/* STATS */
+async function updateIdeasStats(ideas){
+  document.getElementById('ideasStatCount').textContent=ideas.length;
+  document.getElementById('ideasStatVotes').textContent=ideas.reduce((s,i)=>s+(i.vote_count||0),0);
+  const{count}=await db.from('dsn_game_ideas').select('id',{count:'exact',head:true}).eq('is_winner',true);
+  document.getElementById('ideasStatWinners').textContent=count||0;
+}
+
+function ideasStatusClass(s){const m={vorgeschlagen:'s-vorgeschlagen',abgelehnt:'s-abgelehnt',in_arbeit:'s-in_arbeit',umgesetzt:'s-umgesetzt'};return m[s]||'s-vorgeschlagen';}
+function ideasStatusLabel(s){const m={vorgeschlagen:'Vorgeschlagen',abgelehnt:'Abgelehnt',in_arbeit:'In Arbeit',umgesetzt:'Umgesetzt',gewinner:'Gewinner'};return m[s]||s;}
+
+/* INIT — wird in applyLoggedIn / applyLoggedOut aufgerufen */
+function initIdeasBoard(){
+  ideasStartCountdown();
+  if(currentUser){
+    document.getElementById('ideasDirectSubmit').style.display='block';
+    document.getElementById('ideasGuestSubmit').style.display='none';
+    // Promo-Banner für eingeloggte: nur Stats + Willkommen zeigen, kein Login-CTA
+    document.getElementById('ideasPromoActions').style.display='none';
+  }else{
+    document.getElementById('ideasDirectSubmit').style.display='none';
+    document.getElementById('ideasGuestSubmit').style.display='block';
+    document.getElementById('ideasPromoActions').style.display='flex';
+  }
+  loadIdeasCurrent();
+}
+
+/* ══ AD TICKER ══ */
+let adItems=[];
+let adCurrentIdx=0;
+let adRotateTimer=null;
+const AD_DISMISSED_KEY='dsn_ad_dismissed';
+
+async function loadAds(){
+  try{
+    const{data,error}=await db.from('dsn_ads').select('*').eq('active',true).order('sort_order',{ascending:true});
+    if(error||!data||!data.length){renderAdTicker([]);return;}
+    adItems=data;
+    renderAdTicker(data);
+  }catch(e){renderAdTicker([]);}
+}
+
+function renderAdTicker(items){
+  const ticker=document.getElementById('adTicker');
+  const slot=document.getElementById('adSlot');
+  const closeBtn=document.getElementById('adClose');
+  const empty=document.getElementById('adEmpty');
+
+  // Check if dismissed this session
+  if(sessionStorage.getItem(AD_DISMISSED_KEY)==='1'){ticker.classList.add('hidden');return;}
+
+  // Show close button only for logged-in users
+  if(currentUser)closeBtn.classList.add('visible');
+  else closeBtn.classList.remove('visible');
+
+  if(!items||!items.length){
+    slot.innerHTML='';
+    if(empty)empty.style.display='block';
+    // Hide ticker if no ads and not admin
+    if(!adminHashInMemory)ticker.classList.add('hidden');
+    return;
+  }
+
+  ticker.classList.remove('hidden');
+  if(empty)empty.style.display='none';
+
+  // Build slides
+  slot.innerHTML='';
+  items.forEach((ad,i)=>{
+    const slide=document.createElement('div');
+    slide.className='ad-ticker-slide'+(i===0?' active':'');
+    slide.dataset.adId=ad.id;
+    if(ad.link)slide.style.cursor='pointer';
+    if(ad.link)slide.onclick=()=>window.open(ad.link,'_blank');
+
+    if(ad.type==='video'){
+      slide.innerHTML=`<video src="${ad.data}" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>`;
+    }else{
+      slide.innerHTML=`<img src="${ad.data}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"/>`;
+    }
+    slot.appendChild(slide);
+  });
+
+  adCurrentIdx=0;
+  if(adRotateTimer)clearInterval(adRotateTimer);
+  if(items.length>1){
+    // Use first item duration or fallback 5s
+    const startDur=(items[0].duration_sec||5)*1000;
+    adRotateTimer=setTimeout(()=>rotateAd(),startDur);
+  }
+}
+
+function rotateAd(){
+  if(!adItems.length)return;
+  const slides=document.querySelectorAll('#adSlot .ad-ticker-slide');
+  if(!slides.length)return;
+  slides[adCurrentIdx].classList.remove('active');
+  adCurrentIdx=(adCurrentIdx+1)%adItems.length;
+  slides[adCurrentIdx].classList.add('active');
+  const dur=(adItems[adCurrentIdx].duration_sec||5)*1000;
+  if(adRotateTimer)clearTimeout(adRotateTimer);
+  adRotateTimer=setTimeout(()=>rotateAd(),dur);
+}
+
+function dismissAd(){
+  if(!currentUser)return;
+  sessionStorage.setItem(AD_DISMISSED_KEY,'1');
+  const ticker=document.getElementById('adTicker');
+  ticker.style.opacity='0';
+  setTimeout(()=>ticker.classList.add('hidden'),300);
+  if(adRotateTimer)clearTimeout(adRotateTimer);
+}
+
+/* ADMIN: load ad list */
+async function loadAdminAds(){
+  if(!adminHashInMemory)return;
+  const list=document.getElementById('adAdminList');
+  if(!list)return;
+  list.innerHTML='<div style="font-family:var(--fu);font-size:11px;color:var(--text-muted);letter-spacing:1px;">Lädt…</div>';
+  try{
+    const{data}=await db.from('dsn_ads').select('*').order('sort_order',{ascending:true});
+    if(!data||!data.length){list.innerHTML='<div style="font-family:var(--fu);font-size:11px;color:var(--text-muted);letter-spacing:1px;">Keine Ads vorhanden.</div>';return;}
+    list.innerHTML='';
+    data.forEach(ad=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg-surface);border:1px solid var(--border-subtle);';
+      const thumb=ad.type==='video'
+        ?`<video src="${ad.data}" style="width:60px;height:22px;object-fit:cover;border:1px solid var(--border-mid);"></video>`
+        :`<img src="${ad.data}" style="width:60px;height:22px;object-fit:cover;border:1px solid var(--border-mid);" alt=""/>`;
+      row.innerHTML=`${thumb}
+        <span style="font-family:var(--fu);font-size:11px;color:var(--text-secondary);flex:1;letter-spacing:1px;">${ad.type.toUpperCase()} · ${ad.duration_sec||5}s${ad.link?' · '+ad.link.slice(0,20)+'…':''}</span>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+          <input type="checkbox" ${ad.active?'checked':''} onchange="toggleAdActive('${ad.id}',this.checked)" style="accent-color:var(--admin)"/>
+          <span style="font-family:var(--fu);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);">Aktiv</span>
+        </label>
+        <button onclick="deleteAd('${ad.id}')" style="background:none;border:1px solid rgba(255,68,68,.3);color:rgba(255,68,68,.6);font-family:var(--fu);font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;cursor:pointer;">DEL</button>`;
+      list.appendChild(row);
+    });
+  }catch(e){list.innerHTML=`<div style="color:var(--danger);font-size:11px;">${e.message}</div>`;}
+}
+
+async function handleAdUpload(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const isVideo=file.type.startsWith('video/');
+  document.getElementById('adType').value=isVideo?'video':'image';
+
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    document.getElementById('adFileBase64').value=ev.target.result;
+    document.getElementById('adFileMime').value=file.type;
+    const lbl=document.getElementById('adUploadLabel');
+    lbl.textContent='✓ Datei geladen';
+    if(!isVideo){
+      const img=document.getElementById('adPreviewImg');
+      img.src=ev.target.result;img.style.display='block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveAd(){
+  if(!adminHashInMemory)return;
+  const data=document.getElementById('adFileBase64').value;
+  if(!data){showMsg('adMsg','Bitte zuerst eine Datei auswählen.','err');return;}
+  const type=document.getElementById('adType').value;
+  const duration=parseInt(document.getElementById('adDuration').value)||5;
+  const link=document.getElementById('adLink').value.trim()||null;
+
+  document.getElementById('adSaveTxt').innerHTML='<span class="spin"></span>SPEICHERE…';
+  try{
+    const{data:existing}=await db.from('dsn_ads').select('sort_order').order('sort_order',{ascending:false}).limit(1);
+    const nextOrder=existing&&existing.length?(existing[0].sort_order||0)+1:1;
+    const{error}=await db.from('dsn_ads').insert({type,data,duration_sec:duration,link,active:true,sort_order:nextOrder});
+    if(error)throw error;
+    showMsg('adMsg','✓ Ad gespeichert!','ok');
+    document.getElementById('adFileBase64').value='';
+    document.getElementById('adFileMime').value='';
+    document.getElementById('adUploadLabel').textContent='Bild oder Video auswählen';
+    document.getElementById('adPreviewImg').style.display='none';
+    document.getElementById('adLink').value='';
+    await loadAdminAds();
+    await loadAds();
+    setTimeout(()=>hideMsg('adMsg'),2500);
+  }catch(e){showMsg('adMsg','Fehler: '+e.message,'err');}
+  finally{document.getElementById('adSaveTxt').textContent='AD SPEICHERN';}
+}
+
+async function toggleAdActive(id,active){
+  if(!adminHashInMemory)return;
+  await db.from('dsn_ads').update({active}).eq('id',id);
+  await loadAds();
+}
+
+async function deleteAd(id){
+  if(!adminHashInMemory)return;
+  if(!confirm('Ad wirklich löschen?'))return;
+  await db.from('dsn_ads').delete().eq('id',id);
+  await loadAdminAds();
+  await loadAds();
+}
 
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeAccountDrawer();closeAdminDrawer();closeDelModal();}
