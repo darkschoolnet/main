@@ -43,7 +43,7 @@ header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-su
 .hbtn-admin:hover{border-color:var(--admin);}
 
 /* ── AD BANNER ── */
-.ad-banner{position:relative;margin-left:16px;flex-shrink:0;width:320px;height:52px;overflow:hidden;transition:opacity .3s;}
+.ad-banner{position:relative;flex-shrink:0;width:320px;height:38px;overflow:hidden;transition:opacity .3s;}
 .ad-banner.hidden{display:none;}
 .ad-media-wrap{position:absolute;inset:0;cursor:pointer;}
 .ad-media-wrap img,.ad-media-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
@@ -487,23 +487,22 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
 <header>
   <div class="logo">DARK<span>SCHOOL</span>NET</div>
 
-  <!-- AD BANNER -->
-  <div class="ad-banner" id="adTicker">
-    <!-- slides injected by JS -->
-    <div id="adSlot"></div>
-    <div class="ad-label">Werbung</div>
-    <div class="ad-close-wrap">
-      <button class="ad-close-btn" id="adClose" onclick="dismissAd()" title="Schließen">✕</button>
-      <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum<br>Schließen</span>
-    </div>
-  </div>
-
   <div class="header-right">
     <div class="user-badge" id="userBadge" onclick="openAccountDrawer('overview')">
       <div class="dot"></div><span id="badgeUser">—</span>
     </div>
     <button class="hbtn hbtn-accent" id="btnAccount" onclick="openAccountDrawer('login')">ACCOUNT</button>
     <button class="hbtn hbtn-admin" onclick="openAdminLogin()">ADMIN</button>
+
+    <!-- AD BANNER -->
+    <div class="ad-banner" id="adTicker">
+      <div id="adSlot"></div>
+      <div class="ad-label">Werbung</div>
+      <div class="ad-close-wrap">
+        <button class="ad-close-btn" id="adClose" onclick="dismissAd()" title="Schließen">✕</button>
+        <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum<br>Schließen</span>
+      </div>
+    </div>
   </div>
 </header>
 
