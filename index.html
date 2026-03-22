@@ -43,7 +43,7 @@ header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-su
 .hbtn-admin:hover{border-color:var(--admin);}
 
 /* ── AD BANNER ── */
-.ad-banner{position:relative;flex-shrink:0;width:320px;height:38px;overflow:hidden;transition:opacity .3s;}
+.ad-banner{position:absolute;right:32px;top:50%;transform:translateY(-50%);width:340px;height:240px;overflow:hidden;transition:opacity .3s;z-index:2;border:1px solid var(--border-subtle);}
 .ad-banner.hidden{display:none;}
 .ad-media-wrap{position:absolute;inset:0;cursor:pointer;}
 .ad-media-wrap img,.ad-media-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
@@ -60,7 +60,7 @@ header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-su
 .ad-empty-txt{font-family:var(--fu);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
 
 /* HERO */
-.hero{position:relative;z-index:1;text-align:center;padding:80px 32px 60px;}
+.hero{position:relative;z-index:1;text-align:center;padding:80px 32px 60px;min-height:320px;}
 .hero-tag{font-family:var(--fu);font-size:11px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;justify-content:center;gap:12px;}
 .hero-tag::before,.hero-tag::after{content:'';width:40px;height:1px;background:var(--accent);opacity:.4;}
 .hero h1{font-family:var(--fi);font-size:clamp(44px,9vw,96px);letter-spacing:6px;text-transform:uppercase;color:var(--text-white);line-height:.92;}
@@ -493,16 +493,6 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
     </div>
     <button class="hbtn hbtn-accent" id="btnAccount" onclick="openAccountDrawer('login')">ACCOUNT</button>
     <button class="hbtn hbtn-admin" onclick="openAdminLogin()">ADMIN</button>
-
-    <!-- AD BANNER -->
-    <div class="ad-banner" id="adTicker">
-      <div id="adSlot"></div>
-      <div class="ad-label">Werbung</div>
-      <div class="ad-close-wrap">
-        <button class="ad-close-btn" id="adClose" onclick="dismissAd()" title="Schließen">✕</button>
-        <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum<br>Schließen</span>
-      </div>
-    </div>
   </div>
 </header>
 
@@ -511,6 +501,16 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
   <div class="hero-tag">PRIVATES SCHÜLER-NETZWERK</div>
   <h1>DARK<br><span class="accent">SCHOOL</span><br>NET</h1>
   <p class="hero-sub">Dein Hub für Spiele &amp; Apps auf dem Schul-iPad</p>
+
+  <!-- AD BANNER -->
+  <div class="ad-banner" id="adTicker">
+    <div id="adSlot"></div>
+    <div class="ad-label">Werbung</div>
+    <div class="ad-close-wrap">
+      <button class="ad-close-btn" id="adClose" onclick="dismissAd()" title="Schließen">✕</button>
+      <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum<br>Schließen</span>
+    </div>
+  </div>
 </section>
 
 <!-- PROMO BANNER -->
