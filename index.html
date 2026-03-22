@@ -42,18 +42,22 @@ header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-su
 .hbtn-admin::before{background:var(--admin);}
 .hbtn-admin:hover{border-color:var(--admin);}
 
-/* ── AD TICKER ── */
-.ad-ticker{display:flex;align-items:center;gap:0;height:36px;overflow:hidden;position:relative;border:1px solid var(--border-subtle);background:var(--bg-card);margin-left:12px;flex-shrink:0;max-width:200px;min-width:120px;transition:opacity .3s;}
-.ad-ticker.hidden{display:none;}
-.ad-ticker-label{font-family:var(--fu);font-size:8px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);writing-mode:vertical-rl;padding:0 5px;border-right:1px solid var(--border-subtle);height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--bg-surface);}
-.ad-ticker-slot{flex:1;height:100%;overflow:hidden;position:relative;cursor:pointer;}
-.ad-ticker-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .5s;pointer-events:none;}
-.ad-ticker-slide.active{opacity:1;pointer-events:auto;}
-.ad-ticker-slide img,.ad-ticker-slide video{width:100%;height:100%;object-fit:cover;display:block;}
-.ad-ticker-close{display:none;align-items:center;justify-content:center;width:20px;height:100%;background:none;border:none;border-left:1px solid var(--border-subtle);color:var(--text-muted);cursor:pointer;font-size:10px;flex-shrink:0;transition:color .15s,background .15s;}
-.ad-ticker-close:hover{color:var(--text-white);background:rgba(255,255,255,.05);}
-.ad-ticker-close.visible{display:flex;}
-.ad-ticker-empty{font-family:var(--fu);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);padding:0 10px;}
+/* ── AD BANNER ── */
+.ad-banner{position:relative;margin-left:16px;flex-shrink:0;width:320px;height:52px;overflow:hidden;transition:opacity .3s;}
+.ad-banner.hidden{display:none;}
+.ad-media-wrap{position:absolute;inset:0;cursor:pointer;}
+.ad-media-wrap img,.ad-media-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+.ad-label{position:absolute;bottom:3px;left:5px;font-family:var(--fu);font-size:7px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);pointer-events:none;z-index:2;}
+.ad-slide{position:absolute;inset:0;opacity:0;transition:opacity .5s;pointer-events:none;}
+.ad-slide.active{opacity:1;pointer-events:auto;}
+.ad-close-wrap{position:absolute;top:0;right:0;bottom:0;width:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:3;border-left:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.45);backdrop-filter:blur(2px);}
+.ad-close-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:11px;width:100%;flex:1;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s;line-height:1;}
+.ad-close-btn:hover{color:#fff;background:rgba(255,255,255,.08);}
+.ad-close-btn.locked{cursor:default;color:rgba(255,255,255,.2);}
+.ad-login-hint{font-family:var(--fu);font-size:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);text-align:center;padding:0 3px;line-height:1.3;cursor:pointer;transition:color .15s;}
+.ad-login-hint:hover{color:rgba(255,255,255,.6);}
+.ad-empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1px solid var(--border-subtle);}
+.ad-empty-txt{font-family:var(--fu);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
 
 /* HERO */
 .hero{position:relative;z-index:1;text-align:center;padding:80px 32px 60px;}
@@ -483,13 +487,15 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
 <header>
   <div class="logo">DARK<span>SCHOOL</span>NET</div>
 
-  <!-- AD TICKER -->
-  <div class="ad-ticker" id="adTicker">
-    <div class="ad-ticker-label">AD</div>
-    <div class="ad-ticker-slot" id="adSlot">
-      <div class="ad-ticker-empty" id="adEmpty"></div>
+  <!-- AD BANNER -->
+  <div class="ad-banner" id="adTicker">
+    <!-- slides injected by JS -->
+    <div id="adSlot"></div>
+    <div class="ad-label">Werbung</div>
+    <div class="ad-close-wrap">
+      <button class="ad-close-btn" id="adClose" onclick="dismissAd()" title="Schließen">✕</button>
+      <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum<br>Schließen</span>
     </div>
-    <button class="ad-ticker-close" id="adClose" onclick="dismissAd()" title="Werbung schließen">✕</button>
   </div>
 
   <div class="header-right">
@@ -1132,7 +1138,6 @@ function applyLoggedIn(u){
   document.getElementById('welcomeBanner').classList.add('active');
   renderDashboard(u);
   initIdeasBoard();
-  const adCloseBtn=document.getElementById('adClose');if(adCloseBtn)adCloseBtn.classList.add('visible');
 }
 function applyLoggedOut(){
   document.getElementById('userBadge').classList.remove('active');
@@ -1924,47 +1929,50 @@ function renderAdTicker(items){
   const ticker=document.getElementById('adTicker');
   const slot=document.getElementById('adSlot');
   const closeBtn=document.getElementById('adClose');
-  const empty=document.getElementById('adEmpty');
+  const loginHint=document.getElementById('adLoginHint');
 
-  // Check if dismissed this session
+  // If dismissed this session, stay hidden
   if(sessionStorage.getItem(AD_DISMISSED_KEY)==='1'){ticker.classList.add('hidden');return;}
 
-  // Show close button only for logged-in users
-  if(currentUser)closeBtn.classList.add('visible');
-  else closeBtn.classList.remove('visible');
+  // X always visible; logged-in = clickable, guest = locked + login hint below
+  if(currentUser){
+    closeBtn.classList.remove('locked');
+    closeBtn.style.cursor='pointer';
+    if(loginHint)loginHint.style.display='none';
+  }else{
+    closeBtn.classList.add('locked');
+    closeBtn.style.cursor='default';
+    if(loginHint)loginHint.style.display='block';
+  }
 
   if(!items||!items.length){
-    slot.innerHTML='';
-    if(empty)empty.style.display='block';
-    // Hide ticker if no ads and not admin
+    slot.innerHTML='<div class="ad-empty-state"><span class="ad-empty-txt">Keine Ads</span></div>';
     if(!adminHashInMemory)ticker.classList.add('hidden');
     return;
   }
 
   ticker.classList.remove('hidden');
-  if(empty)empty.style.display='none';
 
   // Build slides
   slot.innerHTML='';
   items.forEach((ad,i)=>{
     const slide=document.createElement('div');
-    slide.className='ad-ticker-slide'+(i===0?' active':'');
-    slide.dataset.adId=ad.id;
-    if(ad.link)slide.style.cursor='pointer';
-    if(ad.link)slide.onclick=()=>window.open(ad.link,'_blank');
-
+    slide.className='ad-slide'+(i===0?' active':'');
+    const wrap=document.createElement('div');
+    wrap.className='ad-media-wrap';
+    if(ad.link){wrap.style.cursor='pointer';wrap.onclick=()=>window.open(ad.link,'_blank');}
     if(ad.type==='video'){
-      slide.innerHTML=`<video src="${ad.data}" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;"></video>`;
+      wrap.innerHTML=`<video src="${ad.data}" autoplay muted loop playsinline></video>`;
     }else{
-      slide.innerHTML=`<img src="${ad.data}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"/>`;
+      wrap.innerHTML=`<img src="${ad.data}" alt=""/>`;
     }
+    slide.appendChild(wrap);
     slot.appendChild(slide);
   });
 
   adCurrentIdx=0;
-  if(adRotateTimer)clearInterval(adRotateTimer);
+  if(adRotateTimer)clearTimeout(adRotateTimer);
   if(items.length>1){
-    // Use first item duration or fallback 5s
     const startDur=(items[0].duration_sec||5)*1000;
     adRotateTimer=setTimeout(()=>rotateAd(),startDur);
   }
@@ -1972,7 +1980,7 @@ function renderAdTicker(items){
 
 function rotateAd(){
   if(!adItems.length)return;
-  const slides=document.querySelectorAll('#adSlot .ad-ticker-slide');
+  const slides=document.querySelectorAll('#adSlot .ad-slide');
   if(!slides.length)return;
   slides[adCurrentIdx].classList.remove('active');
   adCurrentIdx=(adCurrentIdx+1)%adItems.length;
@@ -1983,7 +1991,7 @@ function rotateAd(){
 }
 
 function dismissAd(){
-  if(!currentUser)return;
+  if(!currentUser)return; // guests can't dismiss
   sessionStorage.setItem(AD_DISMISSED_KEY,'1');
   const ticker=document.getElementById('adTicker');
   ticker.style.opacity='0';
