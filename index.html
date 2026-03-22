@@ -43,18 +43,18 @@ header{position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border-su
 .hbtn-admin:hover{border-color:var(--admin);}
 
 /* ── AD BANNER ── */
-.ad-banner{position:absolute;right:32px;top:50%;transform:translateY(-50%);width:340px;height:240px;overflow:hidden;transition:opacity .3s;z-index:2;border:1px solid var(--border-subtle);}
+.ad-banner{position:absolute;right:32px;top:50%;transform:translateY(-50%);width:480px;height:240px;overflow:hidden;transition:opacity .3s;z-index:2;border:1px solid var(--border-subtle);}
 .ad-banner.hidden{display:none;}
 .ad-media-wrap{position:absolute;inset:0;cursor:pointer;}
 .ad-media-wrap img,.ad-media-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
 .ad-label{position:absolute;bottom:3px;left:5px;font-family:var(--fu);font-size:7px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);pointer-events:none;z-index:2;}
 .ad-slide{position:absolute;inset:0;opacity:0;transition:opacity .5s;pointer-events:none;}
 .ad-slide.active{opacity:1;pointer-events:auto;}
-.ad-close-wrap{position:absolute;top:0;right:0;bottom:0;width:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;z-index:3;border-left:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.45);backdrop-filter:blur(2px);}
-.ad-close-btn{background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:11px;width:100%;flex:1;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s;line-height:1;}
+.ad-close-wrap{position:absolute;top:8px;right:8px;width:24px;height:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:3;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.12);border-radius:2px;}
+.ad-close-btn{background:none;border:none;color:rgba(255,255,255,.6);cursor:pointer;font-size:12px;width:100%;height:100%;display:flex;align-items:center;justify-content:center;transition:color .15s,background .15s;line-height:1;}
 .ad-close-btn:hover{color:#fff;background:rgba(255,255,255,.08);}
 .ad-close-btn.locked{cursor:default;color:rgba(255,255,255,.2);}
-.ad-login-hint{font-family:var(--fu);font-size:6px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);text-align:center;padding:0 3px;line-height:1.3;cursor:pointer;transition:color .15s;}
+.ad-login-hint{position:absolute;top:36px;right:8px;font-family:var(--fu);font-size:7px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4);text-align:center;line-height:1.4;cursor:pointer;transition:color .15s;background:rgba(0,0,0,.55);padding:3px 5px;border:1px solid rgba(255,255,255,.08);}
 .ad-login-hint:hover{color:rgba(255,255,255,.6);}
 .ad-empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1px solid var(--border-subtle);}
 .ad-empty-txt{font-family:var(--fu);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
@@ -508,8 +508,8 @@ select.fi-inp option{background:#161616;color:var(--text-white);}
     <div class="ad-label">Werbung</div>
     <div class="ad-close-wrap">
       <button class="ad-close-btn" id="adClose" onclick="dismissAd()" title="Schließen">✕</button>
-      <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum<br>Schließen</span>
     </div>
+    <span class="ad-login-hint" id="adLoginHint" onclick="openAccountDrawer('login')" style="display:none;">Anmelden<br>zum Schließen</span>
   </div>
 </section>
 
